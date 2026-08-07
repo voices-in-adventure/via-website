@@ -1,0 +1,66 @@
+/*
+  Design tokens for VIA. Every color, font, radius, and spacing value used
+  anywhere on the site comes from here — see docs/via-design.md, which is
+  the source of truth this file transcribes. Changing the brand later
+  (tag colors, accent, type) should be a one-file edit.
+
+  Font files themselves are loaded in src/layouts/BaseLayout.astro; this
+  file only defines the tokens that point at them.
+*/
+
+:root {
+  /* ---- Color: neutrals — 90% of non-photographic pixels ---- */
+  --bg: #fafafa; /* never pure white */
+  --surface: #f2f2f0;
+  --fg: #111111; /* never pure black */
+  --muted: #6b6b6b;
+  --border: #e2e2de;
+
+  /* ---- Color: accent — VIA blue. Max 2 visible uses per screen. ---- */
+  --accent: #0b6fd4; /* text, links, rules — passes 4.5:1 on --bg */
+  --accent-bright: #1a85ff; /* fills only, never text */
+
+  /* ---- Color: tags — semantic only, never decorative ---- */
+  --tag-europe: #1a85ff;
+  --tag-asia: #d4562a;
+  --tag-americas: #1e3a5f;
+  --tag-africa: #7a4410;
+  --tag-oceania: #c9a227;
+  --tag-mideast: #4a7c59;
+
+  /* ---- Type: faces ----
+     Newsreader carries both display and body copy — one family across
+     both roles, on purpose. Poppins is utility only (nav, metadata,
+     captions, tags, buttons). Space Mono appears in the world-clock
+     ticker and nowhere else. */
+  --font-serif: 'Newsreader Variable', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Poppins', -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'Space Mono', 'SF Mono', Consolas, monospace;
+
+  /* ---- Type: scale ---- */
+  --text-xs: 0.75rem; /* tags, timestamps */
+  --text-sm: 0.875rem; /* captions, bylines */
+  --text-base: 1.125rem; /* article body — 18px, not 16px */
+  --text-lg: 1.375rem; /* deks, pull quotes */
+  --text-xl: 2rem;
+  --text-2xl: 3rem;
+  --text-3xl: 4.5rem;
+  --text-4xl: 7rem; /* hero only */
+
+  /* ---- Layout: spacing ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-24: 96px;
+  --space-32: 128px;
+
+  /* ---- Layout: shape and measure ---- */
+  --radius: 4px; /* consistent everywhere it applies; nothing is pill-shaped */
+  --measure: 68ch; /* article column */
+  --gutter: var(--space-6);
+}
