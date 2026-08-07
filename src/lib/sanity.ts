@@ -1,6 +1,6 @@
 import {createClient} from '@sanity/client'
 import imageUrlBuilder from '@sanity/image-url'
-import type {Image} from '@sanity/types'
+import type {SanityImageSource} from '@sanity/image-url/lib/types/types'
 
 const projectId = import.meta.env.PUBLIC_SANITY_PROJECT_ID
 const dataset = import.meta.env.PUBLIC_SANITY_DATASET
