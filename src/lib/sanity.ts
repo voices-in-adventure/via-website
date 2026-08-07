@@ -22,6 +22,6 @@ export const sanityClient = createClient({
 const builder = imageUrlBuilder(sanityClient)
 
 /** Turns a Sanity image field into a URL you can put on an <img>. Chain .width()/.height() as needed before calling .url(). */
-export function urlFor(source: Image) {
+export function urlFor(source: SanityImageSource) {
   return builder.image(source)
 }
