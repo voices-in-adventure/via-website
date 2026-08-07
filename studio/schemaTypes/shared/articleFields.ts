@@ -98,7 +98,13 @@ export const placesField = () =>
     type: 'array',
     group: 'tags',
     description: 'Which regions does this piece cover? Pick all that apply — this drives the Journeys → Places to go page.',
-    of: [defineArrayMember({type: 'reference', to: [{type: 'place'}]})],
+    of: [
+      defineArrayMember({
+        type: 'reference',
+        to: [{type: 'place'}],
+        options: {disableNew: true},
+      }),
+    ],
     validation: (rule) => rule.required().min(1),
   })
 
@@ -110,7 +116,13 @@ export const reasonsField = () =>
     group: 'tags',
     description:
       'Which "reasons to go" fit this piece? Optional — this drives the Journeys → Reasons to go page.',
-    of: [defineArrayMember({type: 'reference', to: [{type: 'reason'}]})],
+    of: [
+      defineArrayMember({
+        type: 'reference',
+        to: [{type: 'reason'}],
+        options: {disableNew: true},
+      }),
+    ],
   })
 
 export const productsField = () =>
