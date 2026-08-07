@@ -70,7 +70,7 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {month: 'long', day: 'num
               <img
                 class="card-media"
                 src={urlFor(article.heroImage).width(800).height(600).fit('crop').quality(80).url()}
-                alt=""
+                alt={article.title}
               />
             )}
             <p class="card-kicker">
