@@ -1,0 +1,94 @@
+---
+// The homepage's signature element — a live readout, not decoration. See
+// docs/via-design.md: "Live, not static. Mono only. It sits at the bottom
+// edge of the hero." Cities come from the pages that call this component,
+// which pull them from actually-published Dispatches — never hardcoded.
+//
+// This is the one place on the site that needs a client-side script: a
+// clock has to keep running after the page loads.
+import {getTimezoneForCity} from '../lib/cityTimezones'
+
+interface Props {
+  cities: string[]
+}
+
+const {cities} = Astro.props
+
+const items = cities.map((city) => ({
+  city,
+  timezone: getTimezoneForCity(city),
+}))
+---
+
+<div class="ticker" role="group" aria-label="Current local time in cities VIA has published about">
+  {
+    items.map(({city, timezone}) => (
+      <div class="ticker-item" data-city={city}>
+        <span class="ticker-city">{city}</span>
+        {timezone ? (
+          <time class="ticker-time" data-tz={timezone}>
+            --:--:--
+          </time>
+        ) : null}
+      </div>
+    ))
+  }
+</div>
+
+<style>
+  .ticker {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: nowrap;
+    gap: var(--space-8);
+    padding: var(--space-4) var(--gutter);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    color: var(--bg);
+    overflow-x: auto;
+  }
+
+  .ticker-item {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    white-space: nowrap;
+  }
+
+  .ticker-item + .ticker-item {
+    border-left: 1px solid color-mix(in srgb, var(--bg) 40%, transparent);
+    padding-left: var(--space-8);
+  }
+
+  .ticker-city {
+    text-transform: uppercase;
+  }
+
+  .ticker-time {
+    color: color-mix(in srgb, var(--bg) 80%, transparent);
+  }
+</style>
+
+<script>
+  function updateTicker() {
+    const now = new Date()
+    document.querySelectorAll<HTMLElement>('.ticker-time[data-tz]').forEach((el) => {
+      const timeZone = el.dataset.tz
+      if (!timeZone) return
+      try {
+        el.textContent = new Intl.DateTimeFormat('en-US', {
+          timeZone,
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false,
+        }).format(now)
+      } catch {
+        // Unknown/invalid IANA zone — leave the placeholder rather than throw.
+      }
+    })
+  }
+
+  updateTicker()
+  setInterval(updateTicker, 1000)
+</script>
