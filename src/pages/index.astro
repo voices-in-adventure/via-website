@@ -1,7 +1,239 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro'
+import WorldClockTicker from '../components/WorldClockTicker.astro'
+import {sanityClient, urlFor} from '../lib/sanity'
+import type {SanityImageSource} from '@sanity/image-url'
+
+interface SiteSettings {
+  heroType: 'image' | 'video'
+  heroImage?: SanityImageSource
+  heroVideoUrl?: string
+  missionStatement?: string
+}
+
+interface FeaturedArticle {
+  _type: 'dispatch' | 'signal'
+  title: string
+  dek: string
+  heroImage: SanityImageSource
+  publishedAt: string
+  city?: string | null
+  author: {name: string} | null
+}
+
+const siteSettings = await sanityClient.fetch<SiteSettings | null>(
+  `*[_type == "siteSettings"][0]{heroType, heroImage, heroVideoUrl, missionStatement}`,
+)
+
+const featured = await sanityClient.fetch<FeaturedArticle[]>(
+  `*[_type in ["dispatch", "signal"] && featured == true && publishedAt <= now()] | order(publishedAt desc){
+    _type, title, dek, heroImage, publishedAt, city, author->{name}
+  }`,
+)
+
+// Homepage ticker: distinct cities across published Dispatches — never a
+// hardcoded list. See docs/content-model.md, "Homepage ticker."
+const dispatchCities = await sanityClient.fetch<string[]>(
+  `*[_type == "dispatch" && publishedAt <= now() && defined(city) && city != ""].city`,
+)
+const tickerCities = [...new Set(dispatchCities)]
+
+const heroImageUrl =
+  siteSettings?.heroType === 'image' && siteSettings.heroImage
+    ? urlFor(siteSettings.heroImage).width(2400).quality(80).url()
+    : null
+
+const dateFormatter = new Intl.DateTimeFormat('en-US', {month: 'long', day: 'numeric', year: 'numeric'})
 ---
 
-<BaseLayout title="VIA — Voices in Adventure">
-	<h1>Astro</h1>
+<BaseLayout title="VIA — Voices in Adventure" description={siteSettings?.missionStatement}>
+  <section class="hero">
+    {heroImageUrl && <img class="hero-media" src={heroImageUrl} alt="" />}
+    <div class="hero-scrim" aria-hidden="true"></div>
+    {
+      siteSettings?.missionStatement && (
+        <div class="hero-mission">
+          <p>{siteSettings.missionStatement}</p>
+        </div>
+      )
+    }
+    {tickerCities.length > 0 && <WorldClockTicker cities={tickerCities} />}
+  </section>
+
+  <section class="featured">
+    <h2 class="section-heading">Editor&rsquo;s Picks</h2>
+    <div class="featured-grid">
+      {
+        featured.map((article) => (
+          <article class="card">
+            {article.heroImage && (
+              <img
+                class="card-media"
+                src={urlFor(article.heroImage).width(800).height(600).fit('crop').quality(80).url()}
+                alt=""
+              />
+            )}
+            <p class="card-kicker">
+              {article._type === 'dispatch' ? 'Dispatch' : 'Signal'}
+              {article.city ? ` — ${article.city}` : ''}
+            </p>
+            <h3 class="card-title">{article.title}</h3>
+            <p class="card-dek">{article.dek}</p>
+            <p class="card-byline">
+              {article.author?.name}
+              {article.author?.name ? ' · ' : ''}
+              {dateFormatter.format(new Date(article.publishedAt))}
+            </p>
+          </article>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="social">
+    <div class="social-inner">
+      <p class="social-eyebrow">Social feed</p>
+      <p class="social-message">
+        Coming soon — VIA&rsquo;s Instagram isn&rsquo;t live yet. When it is, recent posts will run here.
+      </p>
+    </div>
+  </section>
 </BaseLayout>
+
+<style>
+  .hero {
+    position: relative;
+    height: 100vh;
+    min-height: 640px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+
+  .hero-media {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .hero-scrim {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to top,
+      color-mix(in srgb, var(--fg) 88%, transparent) 0%,
+      color-mix(in srgb, var(--fg) 45%, transparent) 42%,
+      transparent 72%
+    );
+  }
+
+  .hero-mission {
+    position: relative;
+    z-index: 1;
+    max-width: 42ch;
+    padding: 0 var(--gutter) var(--space-16);
+  }
+
+  .hero-mission p {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: var(--text-2xl);
+    line-height: 1.15;
+    color: var(--bg);
+  }
+
+  .hero :global(.ticker) {
+    position: relative;
+    z-index: 1;
+    border-top: 1px solid color-mix(in srgb, var(--bg) 30%, transparent);
+  }
+
+  .featured {
+    padding: var(--space-16) var(--gutter);
+  }
+
+  .section-heading {
+    margin: 0 0 var(--space-8);
+    font-family: var(--font-serif);
+    font-size: var(--text-xl);
+    font-weight: 500;
+    color: var(--fg);
+  }
+
+  .featured-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: var(--space-8);
+  }
+
+  .card {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .card-media {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    margin-bottom: var(--space-4);
+  }
+
+  .card-kicker {
+    margin: 0 0 var(--space-2);
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    color: var(--muted);
+  }
+
+  .card-title {
+    margin: 0 0 var(--space-2);
+    font-family: var(--font-serif);
+    font-size: var(--text-lg);
+    line-height: 1.2;
+    color: var(--fg);
+  }
+
+  .card-dek {
+    margin: 0 0 var(--space-3);
+    font-family: var(--font-serif);
+    font-size: var(--text-base);
+    color: var(--muted);
+  }
+
+  .card-byline {
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    color: var(--muted);
+  }
+
+  .social {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: var(--space-24) var(--gutter);
+  }
+
+  .social-inner {
+    max-width: 48ch;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .social-eyebrow {
+    margin: 0 0 var(--space-2);
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    color: var(--muted);
+  }
+
+  .social-message {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: var(--text-lg);
+    color: var(--fg);
+  }
+</style>
