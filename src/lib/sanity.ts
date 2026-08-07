@@ -19,7 +19,7 @@ export const sanityClient = createClient({
   useCdn: false, // this is a static build, so freshness at build time matters more than CDN speed
 })
 
-const builder = imageUrlBuilder(sanityClient)
+const builder = createImageUrlBuilder(sanityClient)
 
 /** Turns a Sanity image field into a URL you can put on an <img>. Chain .width()/.height() as needed before calling .url(). */
 export function urlFor(source: SanityImageSource) {
