@@ -1,5 +1,5 @@
 import {createClient} from '@sanity/client'
-import imageUrlBuilder from '@sanity/image-url'
+import {createImageUrlBuilder} from '@sanity/image-url'
 import type {SanityImageSource} from '@sanity/image-url'
 
 const projectId = import.meta.env.PUBLIC_SANITY_PROJECT_ID
