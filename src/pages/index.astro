@@ -360,13 +360,24 @@ const HOUSE_HEROES = [
     a rule running the width of a photograph would look like a mistake.
   */
   .card-title {
-    display: inline;
-    margin: 0 0 var(--space-2);
+    margin: 0 0 var(--space-3);
     font-family: var(--font-serif);
     font-size: var(--text-lg);
     font-weight: 500;
-    line-height: 1.2;
+    line-height: 1.3;
     color: var(--fg);
+  }
+
+  /*
+    The rule lives on an inner inline span, not on the heading itself. A
+    background on a wrapped inline box is painted once across the whole box,
+    which puts a single full-width rule under the last line; box-decoration-break
+    gives each line its own, so the underline follows a two-line headline
+    the way it follows a one-line one.
+  */
+  .card-title-text {
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
     background-image: linear-gradient(currentColor, currentColor);
     background-repeat: no-repeat;
     background-position: 0 100%;
@@ -374,19 +385,19 @@ const HOUSE_HEROES = [
     transition: background-size 260ms ease;
   }
 
-  .card-link:hover .card-title,
-  .card-link:focus-visible .card-title {
+  .card-link:hover .card-title-text,
+  .card-link:focus-visible .card-title-text {
     background-size: 100% 1px;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .card-title {
+    .card-title-text {
       transition: none;
     }
   }
 
   .card-dek {
-    margin: var(--space-3) 0 var(--space-3);
+    margin: 0 0 var(--space-3);
     font-family: var(--font-serif);
     font-size: var(--text-base);
     line-height: 1.5;
