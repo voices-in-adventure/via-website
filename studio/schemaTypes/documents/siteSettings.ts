@@ -113,6 +113,22 @@ export const siteSettings = defineType({
       group: 'social',
       description: 'Where the "Subscribe to Signals" link on Stories should go.',
     }),
+    defineField({
+      name: 'pitchUsUrl',
+      title: 'Pitch us URL',
+      type: 'url',
+      group: 'social',
+      description:
+        'Where the "Pitch us" link in the site footer should go — a form, or a mailto: link.',
+    }),
+    defineField({
+      name: 'feedbackUrl',
+      title: 'Community feedback URL',
+      type: 'url',
+      group: 'social',
+      description:
+        'Where the community feedback link in the site footer should go — a form, or a mailto: link.',
+    }),
   ],
   preview: {
     prepare: () => ({title: 'Site Settings'}),
