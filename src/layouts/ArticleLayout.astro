@@ -1,0 +1,257 @@
+---
+// The article template. Dispatch and Signal share it and differ only in
+// metadata density — content-model.md says so explicitly, and two nearly
+// identical templates would drift apart the first time either is edited.
+//
+// Register is GJIA per docs/via-design.md: generous measure, real hierarchy,
+// photography integrated rather than decorative.
+import BaseLayout from './BaseLayout.astro'
+import PortableBody from '../components/PortableBody.astro'
+import {urlFor} from '../lib/sanity'
+import {articleKicker, formatDate, type Article} from '../lib/articles'
+
+interface Props {
+  article: Article
+}
+
+const {article} = Astro.props
+
+const heroUrl = urlFor(article.heroImage).width(2400).quality(80).url()
+
+const isSignal = article._type === 'signal'
+
+// "Destination Guide · 36 hours" — only Dispatches carry a format.
+const formatLabels: Record<string, string> = {
+  guide: 'Destination Guide',
+  feature: 'Feature',
+  essay: 'Essay',
+}
+const formatLabel = article.format ? formatLabels[article.format] : null
+
+const tags = [...(article.places ?? []), ...(article.reasons ?? [])].map((t) => t.title)
+
+const asOfFormatter = new Intl.DateTimeFormat('en-US', {
+  month: 'long',
+  day: 'numeric',
+  year: 'numeric',
+})
+---
+
+<BaseLayout title={`${article.title} — VIA`} description={article.dek}>
+  <article class="article">
+    <figure class="article-hero">
+      <img src={heroUrl} alt={article.title} />
+      {article.heroCaption && <figcaption>{article.heroCaption}</figcaption>}
+    </figure>
+
+    <header class="article-head">
+      <p class="kicker">
+        {articleKicker(article)}
+        {formatLabel && <span class="kicker-sep">·</span>}
+        {formatLabel}
+        {article.duration && <span class="kicker-sep">·</span>}
+        {article.duration && `${article.duration} hours`}
+      </p>
+
+      <h1 class="title">{article.title}</h1>
+      <p class="dek">{article.dek}</p>
+
+      <p class="byline">
+        {article.author?.name && <span class="byline-name">By {article.author.name}</span>}
+        {article.author?.role && <span class="byline-role">{article.author.role}</span>}
+        <span class="byline-date">{formatDate(article.publishedAt)}</span>
+      </p>
+    </header>
+
+    {
+      /*
+        Signals are reported news, so they lead with the development they are
+        grounded in and the date that information was accurate. content-model.md
+        requires both, and a reader deciding whether to trust a visa rule needs
+        them before the body, not after.
+      */
+      isSignal && article.newsPeg && (
+        <aside class="news-peg">
+          <p class="news-peg-label">What happened</p>
+          <p class="news-peg-text">{article.newsPeg}</p>
+          {article.informationAsOf && (
+            <p class="news-peg-asof">
+              Information accurate as of {asOfFormatter.format(new Date(article.informationAsOf))}
+            </p>
+          )}
+        </aside>
+      )
+    }
+
+    <div class="article-body">
+      <PortableBody value={article.body} />
+    </div>
+
+    {
+      tags.length > 0 && (
+        <footer class="article-foot">
+          <p class="tags-label">Filed under</p>
+          <ul class="tags">
+            {tags.map((tag) => (
+              <li class="tag">{tag}</li>
+            ))}
+          </ul>
+        </footer>
+      )
+    }
+  </article>
+</BaseLayout>
+
+<style>
+  .article {
+    padding-bottom: var(--space-32);
+  }
+
+  /* Full-bleed, no radius — via-design.md: "Full-bleed media has no radius." */
+  .article-hero {
+    margin: 0 0 var(--space-12);
+  }
+
+  .article-hero img {
+    width: 100%;
+    height: 62vh;
+    min-height: 420px;
+    object-fit: cover;
+  }
+
+  .article-hero figcaption {
+    max-width: var(--measure);
+    margin: var(--space-3) auto 0;
+    padding: 0 var(--gutter);
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    line-height: 1.5;
+    color: var(--muted);
+  }
+
+  .article-head,
+  .article-body,
+  .article-foot {
+    max-width: var(--measure);
+    margin: 0 auto;
+    padding: 0 var(--gutter);
+  }
+
+  .article-head {
+    margin-bottom: var(--space-16);
+  }
+
+  .kicker {
+    margin: 0 0 var(--space-4);
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    color: var(--muted);
+  }
+
+  .kicker-sep {
+    margin: 0 var(--space-2);
+  }
+
+  /*
+    Display type gets air — via-design.md: "cramped display type reads as
+    amateur faster than almost anything else."
+  */
+  .title {
+    margin: 0 0 var(--space-6);
+    font-family: var(--font-serif);
+    font-size: var(--text-2xl);
+    font-weight: 500;
+    line-height: 1.08;
+    letter-spacing: -0.01em;
+    color: var(--fg);
+  }
+
+  .dek {
+    margin: 0 0 var(--space-8);
+    font-family: var(--font-serif);
+    font-size: var(--text-lg);
+    font-style: italic;
+    line-height: 1.45;
+    color: var(--muted);
+  }
+
+  .byline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-3);
+    margin: 0;
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border);
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    color: var(--muted);
+  }
+
+  .byline-name {
+    color: var(--fg);
+    font-weight: 500;
+  }
+
+  .news-peg {
+    max-width: var(--measure);
+    margin: 0 auto var(--space-16);
+    padding: var(--space-6) var(--gutter);
+    background: var(--surface);
+    border-left: 2px solid var(--fg);
+  }
+
+  .news-peg-label {
+    margin: 0 0 var(--space-2);
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    color: var(--muted);
+  }
+
+  .news-peg-text {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: var(--text-base);
+    line-height: 1.55;
+    color: var(--fg);
+  }
+
+  .news-peg-asof {
+    margin: var(--space-4) 0 0;
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--muted);
+  }
+
+  .article-foot {
+    margin-top: var(--space-16);
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--border);
+  }
+
+  .tags-label {
+    margin: 0 0 var(--space-3);
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    color: var(--muted);
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* Rectangles with the standard radius. Nothing is pill-shaped. */
+  .tag {
+    padding: var(--space-1) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    color: var(--muted);
+  }
+</style>
