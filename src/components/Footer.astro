@@ -1,0 +1,180 @@
+---
+// Present on every page (rendered once from BaseLayout). Fetches its own
+// siteSettings rather than taking them as a prop, so every current and
+// future page gets a working footer without having to remember to wire one
+// through — see docs/content-model.md, "siteSettings."
+import {sanityClient} from '../lib/sanity'
+
+interface SocialLink {
+  platform: string
+  url: string
+}
+
+interface FooterSettings {
+  dispatchSubscribeUrl?: string | null
+  signalsSubscribeUrl?: string | null
+  pitchUsUrl?: string | null
+  feedbackUrl?: string | null
+  socialLinks?: SocialLink[] | null
+}
+
+const settings = await sanityClient.fetch<FooterSettings | null>(
+  `*[_type == "siteSettings"][0]{
+    dispatchSubscribeUrl, signalsSubscribeUrl, pitchUsUrl, feedbackUrl, socialLinks
+  }`,
+)
+
+const navLinks = [
+  {label: 'Stories', href: '/stories'},
+  {label: 'Journeys', href: '/journeys'},
+  {label: 'Resources', href: '/resources'},
+  {label: 'About', href: '/about'},
+]
+
+const platformLabels: Record<string, string> = {
+  instagram: 'Instagram',
+  tiktok: 'TikTok',
+  twitter: 'X / Twitter',
+  linkedin: 'LinkedIn',
+  other: 'Other',
+}
+---
+
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <a class="footer-logo" href="/" aria-label="VIA — Voices in Adventure, home"></a>
+    </div>
+
+    <nav class="footer-col" aria-label="Site">
+      <p class="footer-heading">Explore</p>
+      <ul class="footer-list">
+        {
+          navLinks.map((link) => (
+            <li>
+              <a href={link.href}>{link.label}</a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+
+    {
+      (settings?.dispatchSubscribeUrl || settings?.signalsSubscribeUrl) && (
+        <div class="footer-col">
+          <p class="footer-heading">Subscribe</p>
+          <ul class="footer-list">
+            {settings.dispatchSubscribeUrl && (
+              <li>
+                <a href={settings.dispatchSubscribeUrl}>Dispatches</a>
+              </li>
+            )}
+            {settings.signalsSubscribeUrl && (
+              <li>
+                <a href={settings.signalsSubscribeUrl}>Signals</a>
+              </li>
+            )}
+          </ul>
+        </div>
+      )
+    }
+
+    {
+      settings?.socialLinks && settings.socialLinks.length > 0 && (
+        <div class="footer-col">
+          <p class="footer-heading">Connect</p>
+          <ul class="footer-list">
+            {settings.socialLinks.map((link) => (
+              <li>
+                <a href={link.url} target="_blank" rel="noopener noreferrer">
+                  {platformLabels[link.platform] ?? link.platform}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )
+    }
+
+    {
+      (settings?.pitchUsUrl || settings?.feedbackUrl) && (
+        <div class="footer-col">
+          <p class="footer-heading">Contribute</p>
+          <ul class="footer-list">
+            {settings.pitchUsUrl && (
+              <li>
+                <a href={settings.pitchUsUrl}>Pitch us</a>
+              </li>
+            )}
+            {settings.feedbackUrl && (
+              <li>
+                <a href={settings.feedbackUrl}>Give feedback</a>
+              </li>
+            )}
+          </ul>
+        </div>
+      )
+    }
+  </div>
+</footer>
+
+<style>
+  .footer {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+  }
+
+  .footer-inner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-16);
+    padding: var(--space-16) var(--gutter);
+  }
+
+  .footer-brand {
+    flex: 1 1 200px;
+  }
+
+  .footer-logo {
+    display: block;
+    width: 88px;
+    height: 40px;
+    background-color: var(--fg);
+    -webkit-mask-image: url('/VIALogo.svg');
+    mask-image: url('/VIALogo.svg');
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: left center;
+    mask-position: left center;
+    background-image: none;
+  }
+
+  .footer-col {
+    min-width: 140px;
+  }
+
+  .footer-heading {
+    margin: 0 0 var(--space-3);
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .footer-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+  }
+
+  .footer-list a {
+    color: var(--fg);
+  }
+</style>
