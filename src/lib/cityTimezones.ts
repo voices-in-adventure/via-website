@@ -89,3 +89,23 @@ const CITY_TIMEZONES: Record<string, string> = {
 export function getTimezoneForCity(city: string): string | null {
   return CITY_TIMEZONES[city.trim().toLowerCase()] ?? null
 }
+
+/**
+ * How many minutes ahead of UTC a timezone currently is. Used only to order
+ * the ticker west-to-east, the way a departures board or a wall of office
+ * clocks is ordered — an unsorted readout looks arbitrary.
+ *
+ * Cities with no known timezone sort last.
+ */
+export function getUtcOffsetMinutes(timezone: string | null): number {
+  if (!timezone) return Number.MAX_SAFE_INTEGER
+  try {
+    const now = new Date()
+    // Format the same instant in UTC and in the target zone, then diff them.
+    const asUtc = new Date(now.toLocaleString('en-US', {timeZone: 'UTC'}))
+    const asZone = new Date(now.toLocaleString('en-US', {timeZone: timezone}))
+    return Math.round((asZone.getTime() - asUtc.getTime()) / 60000)
+  } catch {
+    return Number.MAX_SAFE_INTEGER
+  }
+}
