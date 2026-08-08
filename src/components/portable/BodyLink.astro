@@ -1,0 +1,62 @@
+---
+// A link inside article body copy.
+//
+// Set in --fg with a permanent underline rather than the accent, per
+// anti-slop.md: "If a screen already has an accent-colored action, demote
+// body links to underlined --fg." A long article can carry a dozen links,
+// which would blow the two-accent budget on its own.
+interface Props {
+  node: {
+    markDef?: {href?: string}
+  }
+}
+
+const {node} = Astro.props
+const href = node.markDef?.href
+
+// External links get the usual safety attributes; internal ones don't need them.
+const isExternal = Boolean(href && /^https?:\/\//i.test(href))
+---
+
+{
+  href ? (
+    <a
+      href={href}
+      class="body-link"
+      target={isExternal ? '_blank' : undefined}
+      rel={isExternal ? 'noopener noreferrer' : undefined}
+    >
+      <slot />
+    </a>
+  ) : (
+    <slot />
+  )
+}
+
+<style>
+  /*
+    Body links start underlined — inside a paragraph a link has to be
+    identifiable before you hover it. The hover thickens the rule rather than
+    drawing one in, so the animation still reads without changing what the
+    link looks like at rest.
+  */
+  .body-link {
+    color: var(--fg);
+    background-image: linear-gradient(currentColor, currentColor);
+    background-repeat: no-repeat;
+    background-position: 0 100%;
+    background-size: 100% 1px;
+    transition: background-size 200ms ease;
+  }
+
+  .body-link:hover,
+  .body-link:focus-visible {
+    background-size: 100% 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .body-link {
+      transition: none;
+    }
+  }
+</style>
