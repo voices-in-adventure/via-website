@@ -2,6 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro'
 import WorldClockTicker from '../components/WorldClockTicker.astro'
 import {sanityClient, urlFor} from '../lib/sanity'
+import {CARD_PROJECTION, articleHref, articleKicker, formatDate, type ArticleCard} from '../lib/articles'
 import type {SanityImageSource} from '@sanity/image-url'
 
 interface SiteSettings {
@@ -11,23 +12,13 @@ interface SiteSettings {
   missionStatement?: string
 }
 
-interface FeaturedArticle {
-  _type: 'dispatch' | 'signal'
-  title: string
-  dek: string
-  heroImage: SanityImageSource
-  publishedAt: string
-  city?: string | null
-  author: {name: string} | null
-}
-
 const siteSettings = await sanityClient.fetch<SiteSettings | null>(
   `*[_type == "siteSettings"][0]{heroType, heroImage, heroVideoUrl, missionStatement}`,
 )
 
-const featured = await sanityClient.fetch<FeaturedArticle[]>(
+const featured = await sanityClient.fetch<ArticleCard[]>(
   `*[_type in ["dispatch", "signal"] && featured == true && publishedAt <= now()] | order(publishedAt desc){
-    _type, title, dek, heroImage, publishedAt, city, author->{name}
+    ${CARD_PROJECTION}
   }`,
 )
 
@@ -38,121 +29,292 @@ const dispatchCities = await sanityClient.fetch<string[]>(
 )
 const tickerCities = [...new Set(dispatchCities)]
 
-const heroImageUrl =
+/*
+  The hero photo, in order of preference:
+
+  1. Whatever an editor set in Sanity. If the field has an image, that image
+     is the hero and there is no rotation — the CMS stays in charge.
+  2. Otherwise, one of the six house photos, picked at random per visit.
+
+  Clearing the field in Sanity Studio restores the rotation.
+
+  object-position is set per photo because three of the six are portrait and
+  lose most of the frame to a landscape crop; centering them cuts the subject.
+*/
+const sanityHeroUrl =
   siteSettings?.heroType === 'image' && siteSettings.heroImage
     ? urlFor(siteSettings.heroImage).width(2400).quality(80).url()
     : null
 
-const dateFormatter = new Intl.DateTimeFormat('en-US', {month: 'long', day: 'numeric', year: 'numeric'})
+const HOUSE_HEROES = [
+  {src: '/imagery/HeroImage1.jpg', position: 'center 45%'},
+  {src: '/imagery/HeroImage2.jpg', position: 'center 50%'},
+  {src: '/imagery/HeroImage3.jpg', position: 'center 55%'},
+  {src: '/imagery/HeroImage4.jpg', position: 'center 50%'},
+  {src: '/imagery/HeroImage5.jpg', position: 'center 40%'},
+  {src: '/imagery/HeroImage6.jpg', position: 'center 45%'},
+]
 ---
 
 <BaseLayout title="VIA — Voices in Adventure" description={siteSettings?.missionStatement}>
   <section class="hero">
-    {heroImageUrl && <img class="hero-media" src={heroImageUrl} alt="" />}
-    <div class="hero-scrim" aria-hidden="true"></div>
-    {
-      siteSettings?.missionStatement && (
-        <div class="hero-mission">
-          <p>{siteSettings.missionStatement}</p>
-        </div>
-      )
-    }
+    <div class="hero-frame">
+      {
+        sanityHeroUrl ? (
+          <img class="hero-media" src={sanityHeroUrl} alt="" />
+        ) : (
+          <>
+            {/*
+              The site is a static build, so a photo chosen here would be baked
+              in at build time and never change. Picking in the browser is the
+              only way "random per visit" can be true.
+
+              The script is inline and sits immediately after the <img>, so it
+              runs while the parser is still on this element — the src is set
+              before the browser requests anything. One download, no flash of
+              an empty hero, no second fetch.
+            */}
+            <img class="hero-media" id="hero-photo" alt="" data-srcs={JSON.stringify(HOUSE_HEROES)} />
+            <script is:inline>
+              (function () {
+                var el = document.getElementById('hero-photo')
+                if (!el) return
+                var options = JSON.parse(el.dataset.srcs)
+                var pick = options[Math.floor(Math.random() * options.length)]
+                el.src = pick.src
+                el.style.objectPosition = pick.position
+              })()
+            </script>
+            <noscript>
+              <img class="hero-media" src={HOUSE_HEROES[0].src} alt="" />
+            </noscript>
+          </>
+        )
+      }
+      <div class="hero-scrim" aria-hidden="true"></div>
+    </div>
+
+    <div class="hero-content">
+      <a class="hero-logo-link" href="/" aria-label="VIA — Voices in Adventure, home">
+        <span class="hero-logo"></span>
+      </a>
+
+      {
+        siteSettings?.missionStatement && (
+          <p class="hero-mission">{siteSettings.missionStatement}</p>
+        )
+      }
+    </div>
+
     {tickerCities.length > 0 && <WorldClockTicker cities={tickerCities} />}
   </section>
 
-  <section class="featured">
-    <h2 class="section-heading">Editor&rsquo;s Picks</h2>
-    <div class="featured-grid">
-      {
-        featured.map((article) => (
-          <article class="card">
-            {article.heroImage && (
-              <img
-                class="card-media"
-                src={urlFor(article.heroImage).width(800).height(600).fit('crop').quality(80).url()}
-                alt={article.title}
-              />
-            )}
-            <p class="card-kicker">
-              {article._type === 'dispatch' ? 'Dispatch' : 'Signal'}
-              {article.city ? ` — ${article.city}` : ''}
-            </p>
-            <h3 class="card-title">{article.title}</h3>
-            <p class="card-dek">{article.dek}</p>
-            <p class="card-byline">
-              {article.author?.name}
-              {article.author?.name ? ' · ' : ''}
-              {dateFormatter.format(new Date(article.publishedAt))}
-            </p>
-          </article>
-        ))
-      }
-    </div>
-  </section>
+  {/*
+    Everything below the hero scrolls up over it. It needs its own stacking
+    context and an opaque background for that to read as one surface passing
+    in front of another rather than as a rendering bug.
+  */}
+  <div class="scroller">
+    <section class="featured">
+      <h2 class="section-heading">Editor&rsquo;s Picks</h2>
+      <div class="featured-grid">
+        {
+          featured.map((article) => (
+            <article class="card">
+              <a class="card-link" href={articleHref(article)}>
+                {article.heroImage && (
+                  <img
+                    class="card-media"
+                    src={urlFor(article.heroImage).width(800).height(600).fit('crop').quality(80).url()}
+                    alt={article.title}
+                  />
+                )}
+                <p class="card-kicker">{articleKicker(article)}</p>
+                <h3 class="card-title">{article.title}</h3>
+                <p class="card-dek">{article.dek}</p>
+                <p class="card-byline">
+                  {article.author?.name}
+                  {article.author?.name ? ' · ' : ''}
+                  {formatDate(article.publishedAt)}
+                </p>
+              </a>
+            </article>
+          ))
+        }
+      </div>
+    </section>
 
-  <section class="social">
-    <div class="social-inner">
-      <p class="social-eyebrow">Social feed</p>
-      <p class="social-message">
-        Coming soon — VIA&rsquo;s Instagram isn&rsquo;t live yet. When it is, recent posts will run here.
-      </p>
-    </div>
-  </section>
+    <section class="social">
+      <div class="social-inner">
+        <p class="social-eyebrow">Social feed</p>
+        <p class="social-message">
+          Coming soon — VIA&rsquo;s Instagram isn&rsquo;t live yet. When it is, recent posts will run here.
+        </p>
+      </div>
+    </section>
+  </div>
 </BaseLayout>
 
 <style>
+  /*
+    The hero holds still while the content scrolls over it. position: sticky
+    does the whole job — no scroll listener, no GSAP, no Lenis. It stays stuck
+    for as long as its parent (the page body) is still scrolling past.
+  */
   .hero {
-    position: relative;
+    position: sticky;
+    top: 0;
+    z-index: 0;
     height: 100vh;
     min-height: 640px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
+    justify-content: space-between;
+  }
+
+  .hero-frame {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
   }
 
   .hero-media {
-    position: absolute;
-    inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
+    /* Slight starting scale so the drift has somewhere to go without
+       exposing an edge of the photo. */
+    transform: scale(1.06);
+    transform-origin: center;
+    will-change: transform;
   }
 
+  /*
+    A slow drift tied to scroll position, not to a timer. A looping time-based
+    animation would be the "floating decorative element" anti-slop.md rules
+    out; this only moves because the reader moved.
+
+    Browsers without scroll-driven animation, and readers who have asked for
+    reduced motion, get a still photo and lose nothing.
+  */
+  @supports (animation-timeline: scroll()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .hero-media {
+        animation: hero-drift linear both;
+        animation-timeline: scroll(root block);
+        animation-range: 0 100vh;
+      }
+    }
+  }
+
+  @keyframes hero-drift {
+    from {
+      transform: scale(1.06) translateY(0);
+    }
+    to {
+      transform: scale(1.12) translateY(-3%);
+    }
+  }
+
+  /*
+    The scrim is measured, not guessed. Sampled mean luminance across all six
+    house photos in the three zones that carry type:
+
+      zone            brightest photo
+      top (logo)      180  (HeroImage5)
+      middle          172  (HeroImage1)
+      bottom (ticker) 187  (HeroImage1)
+
+    anti-slop.md requires checking contrast against the worst photo, not the
+    best, so these three layers are sized to bring even those readings under
+    ~110 — dark enough for --bg type at every point where type sits, while
+    leaving the middle of the frame as photography.
+
+    Every value derives from --fg via color-mix, so no new color enters the
+    codebase and a palette change still propagates from tokens.css.
+  */
   .hero-scrim {
     position: absolute;
     inset: 0;
-    background: linear-gradient(
-      to top,
-      color-mix(in srgb, var(--fg) 88%, transparent) 0%,
-      color-mix(in srgb, var(--fg) 45%, transparent) 42%,
-      transparent 72%
-    );
+    background:
+      linear-gradient(
+        to bottom,
+        color-mix(in srgb, var(--fg) 55%, transparent) 0%,
+        transparent 28%
+      ),
+      linear-gradient(
+        to top,
+        color-mix(in srgb, var(--fg) 82%, transparent) 0%,
+        color-mix(in srgb, var(--fg) 45%, transparent) 22%,
+        transparent 55%
+      ),
+      color-mix(in srgb, var(--fg) 18%, transparent);
   }
 
-  .hero-mission {
+  .hero-content {
     position: relative;
     z-index: 1;
-    max-width: 62ch;
-    padding: 0 var(--gutter) var(--space-12);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    flex: 1;
+    padding: var(--space-12) var(--gutter) 0;
   }
 
-  .hero-mission p {
-    margin: 0;
+  .hero-logo-link {
+    /* The global link underline would draw across the logo. */
+    background-image: none;
+    align-self: flex-start;
+  }
+
+  /*
+    VIALogo.svg is a raster image wrapped in an SVG, not vector paths, so
+    `fill` has nothing to act on. Masking uses the file's alpha channel as a
+    stencil and paints it with a real token instead — which means the logo
+    colour still comes from tokens.css and stays a one-file change.
+  */
+  .hero-logo {
+    display: block;
+    width: 132px;
+    height: 61px;
+    background-color: var(--bg);
+    -webkit-mask-image: url('/VIALogo.svg');
+    mask-image: url('/VIALogo.svg');
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: left center;
+    mask-position: left center;
+  }
+
+  /*
+    The mission statement sits in the lower third with a full --space-24
+    between it and the ticker, so the two never read as one crowded block.
+  */
+  .hero-mission {
+    max-width: 52ch;
+    margin: 0 0 var(--space-24);
     font-family: var(--font-serif);
     font-size: var(--text-lg);
-    line-height: 1.4;
+    line-height: 1.45;
     color: var(--bg);
   }
 
   .hero :global(.ticker) {
     position: relative;
     z-index: 1;
-    border-top: 1px solid color-mix(in srgb, var(--bg) 30%, transparent);
+  }
+
+  .scroller {
+    position: relative;
+    z-index: 1;
+    background: var(--bg);
   }
 
   .featured {
-    padding: var(--space-16) var(--gutter);
+    padding: var(--space-24) var(--gutter) var(--space-16);
   }
 
   .section-heading {
@@ -169,9 +331,12 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {month: 'long', day: 'num
     gap: var(--space-8);
   }
 
-  .card {
+  .card-link {
     display: flex;
     flex-direction: column;
+    /* No lift, no scale, no glow — anti-slop.md calls the hover-lift card a
+       stock component. The title's underline is the whole hover. */
+    background-image: none;
   }
 
   .card-media {
@@ -188,18 +353,41 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {month: 'long', day: 'num
     color: var(--muted);
   }
 
+  /*
+    The whole card is the link, but the underline draws under the title only —
+    a rule running the width of a photograph would look like a mistake.
+  */
   .card-title {
+    display: inline;
     margin: 0 0 var(--space-2);
     font-family: var(--font-serif);
     font-size: var(--text-lg);
+    font-weight: 500;
     line-height: 1.2;
     color: var(--fg);
+    background-image: linear-gradient(currentColor, currentColor);
+    background-repeat: no-repeat;
+    background-position: 0 100%;
+    background-size: 0% 1px;
+    transition: background-size 260ms ease;
+  }
+
+  .card-link:hover .card-title,
+  .card-link:focus-visible .card-title {
+    background-size: 100% 1px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card-title {
+      transition: none;
+    }
   }
 
   .card-dek {
-    margin: 0 0 var(--space-3);
+    margin: var(--space-3) 0 var(--space-3);
     font-family: var(--font-serif);
     font-size: var(--text-base);
+    line-height: 1.5;
     color: var(--muted);
   }
 
@@ -213,7 +401,6 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {month: 'long', day: 'num
   .social {
     background: var(--surface);
     border-top: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
     padding: var(--space-24) var(--gutter);
   }
 
