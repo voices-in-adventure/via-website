@@ -1,0 +1,43 @@
+---
+// An in-body photo. Breaks out wider than the text column on purpose:
+// docs/via-design.md asks for "photography integrated rather than
+// decorative," and a photo inset to the measure reads as an illustration
+// dropped into the text instead of part of the article.
+import {urlFor} from '../../lib/sanity'
+import type {SanityImageSource} from '@sanity/image-url'
+
+interface Props {
+  node: SanityImageSource & {caption?: string}
+}
+
+const {node} = Astro.props
+const caption = 'caption' in node ? node.caption : undefined
+---
+
+<figure class="body-figure">
+  <img src={urlFor(node).width(1600).quality(80).url()} alt={caption ?? ''} />
+  {caption && <figcaption>{caption}</figcaption>}
+</figure>
+
+<style>
+  .body-figure {
+    /* Wider than --measure, centered on it. */
+    width: calc(var(--measure) + var(--space-32));
+    max-width: 100%;
+    margin: var(--space-16) 0 var(--space-16) calc(var(--space-16) * -1);
+  }
+
+  .body-figure img {
+    width: 100%;
+    height: auto;
+  }
+
+  figcaption {
+    margin-top: var(--space-3);
+    padding-left: var(--space-16);
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    line-height: 1.5;
+    color: var(--muted);
+  }
+</style>
