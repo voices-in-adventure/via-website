@@ -67,9 +67,16 @@ const {title, description} = Astro.props
   }
 
   /*
-    Links carry no color of their own — they inherit whatever they sit in, and
-    the underline is drawn with currentColor, so a link never spends part of
-    the two-accent budget in anti-slop.md just by existing.
+    Link text stays whatever color it sits in — only the hover underline is
+    colored, and it's one of the site's two sanctioned accent uses (the other
+    is the "Dispatch"/"Signal" kicker labels). Every link on the site shares
+    this one underline system, so it counts as a single use per anti-slop.md's
+    two-per-screen budget rather than one per link.
+
+    BodyLink.astro (links inside article prose) intentionally does NOT use
+    this rule — it has its own always-on --fg underline, because a single
+    article can carry a dozen inline links and coloring all of them accent
+    would blow the budget by itself. See the comment there.
 
     The rule is a background gradient rather than text-decoration because only
     background-size is animatable; the underline grows from the left on hover
@@ -78,7 +85,7 @@ const {title, description} = Astro.props
   a {
     color: inherit;
     text-decoration: none;
-    background-image: linear-gradient(currentColor, currentColor);
+    background-image: linear-gradient(var(--accent), var(--accent));
     background-repeat: no-repeat;
     background-position: 0 100%;
     background-size: 0% 1px;
