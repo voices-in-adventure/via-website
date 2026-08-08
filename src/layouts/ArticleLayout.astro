@@ -44,7 +44,7 @@ const asOfFormatter = new Intl.DateTimeFormat('en-US', {
       {article.heroCaption && <figcaption>{article.heroCaption}</figcaption>}
     </figure>
 
-    <header class="article-head">
+    <header class="article-head" data-nav-boundary>
       <p class="kicker">
         {articleKicker(article)}
         {formatLabel && <span class="kicker-sep">·</span>}
