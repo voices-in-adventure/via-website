@@ -177,7 +177,15 @@ const HOUSE_HEROES = [
     to solid.
   */}
   <div class="scroller">
-    <section class="featured" data-nav-boundary>
+    {/*
+      A zero-height marker, not the section itself — Nav's IntersectionObserver
+      needs a thin point exactly at the hero/content seam. A tall element's
+      intersection ratio can sit fully inside the observer's shrunk root for
+      the entire scroll range where the seam actually crosses the nav, never
+      triggering a callback at the right moment.
+    */}
+    <div data-nav-boundary aria-hidden="true"></div>
+    <section class="featured">
       <h2 class="section-heading">Editor&rsquo;s Picks</h2>
       <div class="featured-grid">
         {featured.map((article) => <ArticleCard article={article} />)}
