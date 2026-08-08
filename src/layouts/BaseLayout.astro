@@ -10,6 +10,8 @@ import '@fontsource/poppins/500.css'
 import '@fontsource/poppins/600.css'
 import '@fontsource/space-mono/400.css'
 import '../styles/tokens.css'
+import Nav from '../components/Nav.astro'
+import Footer from '../components/Footer.astro'
 
 interface Props {
   title: string
@@ -30,7 +32,9 @@ const {title, description} = Astro.props
     {description && <meta name="description" content={description} />}
   </head>
   <body>
+    <Nav />
     <slot />
+    <Footer />
   </body>
 </html>
 
