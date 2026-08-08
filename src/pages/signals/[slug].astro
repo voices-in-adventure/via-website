@@ -1,0 +1,22 @@
+---
+// One page per published Signal. Same template as Dispatches — the Signal
+// extras (news peg, information-as-of date) are handled inside ArticleLayout.
+import ArticleLayout from '../../layouts/ArticleLayout.astro'
+import {sanityClient} from '../../lib/sanity'
+import {ARTICLE_PROJECTION, type Article} from '../../lib/articles'
+
+export async function getStaticPaths() {
+  const signals = await sanityClient.fetch<Article[]>(
+    `*[_type == "signal" && defined(slug.current) && publishedAt <= now()]{${ARTICLE_PROJECTION}}`,
+  )
+
+  return signals.map((article) => ({
+    params: {slug: article.slug},
+    props: {article},
+  }))
+}
+
+const {article} = Astro.props as {article: Article}
+---
+
+<ArticleLayout article={article} />
