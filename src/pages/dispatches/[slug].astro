@@ -1,0 +1,22 @@
+---
+// One page per published Dispatch. All the layout lives in ArticleLayout —
+// this file only decides which documents get a page and fetches them.
+import ArticleLayout from '../../layouts/ArticleLayout.astro'
+import {sanityClient} from '../../lib/sanity'
+import {ARTICLE_PROJECTION, type Article} from '../../lib/articles'
+
+export async function getStaticPaths() {
+  const dispatches = await sanityClient.fetch<Article[]>(
+    `*[_type == "dispatch" && defined(slug.current) && publishedAt <= now()]{${ARTICLE_PROJECTION}}`,
+  )
+
+  return dispatches.map((article) => ({
+    params: {slug: article.slug},
+    props: {article},
+  }))
+}
+
+const {article} = Astro.props as {article: Article}
+---
+
+<ArticleLayout article={article} />
