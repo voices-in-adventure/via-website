@@ -95,9 +95,11 @@ const HOUSE_HEROES = [
     </div>
 
     <div class="hero-content">
-      <a class="hero-logo-link" href="/" aria-label="VIA — Voices in Adventure, home">
-        <span class="hero-logo"></span>
-      </a>
+      {/*
+        Not a link: on the homepage it would only point back here. It becomes
+        the home link when there's a nav and other pages to return from.
+      */}
+      <div class="hero-logo" role="img" aria-label="VIA — Voices in Adventure"></div>
 
       {
         siteSettings?.missionStatement && (
