@@ -59,6 +59,11 @@ const CITY_TIMEZONES: Record<string, string> = {
 
   'new york': 'America/New_York',
   'new york city': 'America/New_York',
+  // Three spellings of the same city, because editors type all three and a
+  // missed match silently drops the live time from the ticker.
+  'washington d.c.': 'America/New_York',
+  'washington dc': 'America/New_York',
+  washington: 'America/New_York',
   boston: 'America/New_York',
   toronto: 'America/Toronto',
   chicago: 'America/Chicago',
