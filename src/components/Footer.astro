@@ -120,6 +120,12 @@ const platformLabels: Record<string, string> = {
 
 <style>
   .footer {
+    /* Same stacking treatment as index.astro's .scroller: the homepage hero
+       stays position: sticky for longer than the scroller's own content
+       runs, so anything after it in the DOM needs its own stacking context
+       and opaque background or the still-stuck hero paints through it. */
+    position: relative;
+    z-index: 1;
     background: var(--surface);
     border-top: 1px solid var(--border);
   }
