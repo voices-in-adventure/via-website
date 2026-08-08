@@ -1,0 +1,127 @@
+---
+// Present on every page (rendered once from BaseLayout). Starts transparent
+// over whatever hero photo a page has — it sits inside the same top-of-hero
+// scrim gradient that already darkens that zone for the logo, so it stays
+// legible without a scrim of its own — and turns solid the moment opaque
+// page content scrolls up to meet it.
+//
+// "The moment opaque content meets it" isn't a fixed scroll distance: the
+// homepage hero is 100vh and sticky, an article hero is 62vh and static. So
+// instead of a scrollY threshold, this watches whichever element on the
+// current page carries `data-nav-boundary` — the point where hero art ends
+// and solid page background begins — and flips to solid exactly when that
+// point reaches behind the nav bar. A page with no such marker (no hero at
+// all) just starts solid, which is the right default for it.
+const links = [
+  {label: 'Stories', href: '/stories'},
+  {label: 'Journeys', href: '/journeys'},
+  {label: 'Resources', href: '/resources'},
+  {label: 'About', href: '/about'},
+]
+---
+
+<nav class="nav" id="site-nav">
+  <div class="nav-inner">
+    <a class="nav-logo" href="/" aria-label="VIA — Voices in Adventure, home"></a>
+    <ul class="nav-links">
+      {
+        links.map((link) => (
+          <li>
+            <a href={link.href}>{link.label}</a>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</nav>
+
+<style>
+  .nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    background-color: transparent;
+    border-bottom: 1px solid transparent;
+    color: var(--bg);
+    transition:
+      background-color 200ms ease,
+      border-color 200ms ease,
+      color 200ms ease;
+  }
+
+  .nav--solid {
+    background-color: var(--bg);
+    border-bottom-color: var(--border);
+    color: var(--fg);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .nav {
+      transition: none;
+    }
+  }
+
+  .nav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-4) var(--gutter);
+  }
+
+  .nav-logo {
+    display: block;
+    width: 96px;
+    height: 44px;
+    background-color: currentColor;
+    -webkit-mask-image: url('/VIALogo.svg');
+    mask-image: url('/VIALogo.svg');
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: left center;
+    mask-position: left center;
+    /* The logo is a link but the site already has its two accent uses
+       spent elsewhere — this one stays neutral, following nav color. */
+    background-image: none;
+  }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+  }
+
+  .nav-links a {
+    color: inherit;
+  }
+</style>
+
+<script>
+  const nav = document.getElementById('site-nav')
+  const boundary = document.querySelector<HTMLElement>('[data-nav-boundary]')
+
+  function applySolid(boundaryTop: number) {
+    if (!nav) return
+    nav.classList.toggle('nav--solid', boundaryTop <= nav.offsetHeight)
+  }
+
+  if (!nav) {
+    // no-op
+  } else if (!boundary) {
+    nav.classList.add('nav--solid')
+  } else {
+    const observer = new IntersectionObserver(
+      (entries) => applySolid(entries[entries.length - 1].boundingClientRect.top),
+      {rootMargin: `-${nav.offsetHeight}px 0px 0px 0px`, threshold: [0, 1]},
+    )
+    observer.observe(boundary)
+  }
+</script>
