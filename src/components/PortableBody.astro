@@ -1,0 +1,108 @@
+---
+// Renders an article body from Sanity's Portable Text.
+//
+// Portable Text is structured data, not markdown — a heading arrives as a
+// block with style "h2", not as "## ". Printing the raw text would flatten
+// every heading, quote, and list into identical paragraphs, which is what
+// astro-portabletext exists to prevent.
+//
+// Every style the editor can pick in studio/schemaTypes/objects/blockContent.ts
+// needs a renderer here. If a style is added there, add it here too or it
+// falls back to a plain paragraph.
+import {PortableText} from 'astro-portabletext'
+import type {PortableTextBlock} from 'astro-portabletext/types'
+import BodyImage from './portable/BodyImage.astro'
+import BodyLink from './portable/BodyLink.astro'
+
+interface Props {
+  value: PortableTextBlock[]
+}
+
+const {value} = Astro.props
+---
+
+<div class="body">
+  <PortableText
+    value={value}
+    components={{
+      type: {image: BodyImage},
+      mark: {link: BodyLink},
+    }}
+  />
+</div>
+
+<style>
+  /*
+    The GJIA register: body copy is the primary surface, not filler between
+    images. 18px, 68ch measure, 1.65 line-height — the numbers in
+    docs/via-design.md, which says this explicitly.
+
+    Styles are applied by element rather than by class because the markup
+    comes from astro-portabletext, not from this file. :global is required
+    for the same reason — Astro's scoping can't see into the rendered blocks.
+  */
+  .body {
+    max-width: var(--measure);
+    font-family: var(--font-serif);
+    font-size: var(--text-base);
+    line-height: 1.65;
+    color: var(--fg);
+  }
+
+  .body :global(p) {
+    margin: 0 0 var(--space-6);
+  }
+
+  .body :global(h2) {
+    margin: var(--space-16) 0 var(--space-4);
+    font-family: var(--font-serif);
+    font-size: var(--text-xl);
+    font-weight: 500;
+    line-height: 1.2;
+  }
+
+  .body :global(h3) {
+    margin: var(--space-12) 0 var(--space-3);
+    font-family: var(--font-serif);
+    font-size: var(--text-lg);
+    font-weight: 600;
+    line-height: 1.25;
+  }
+
+  /* First heading in the body shouldn't push away from the dek above it. */
+  .body :global(h2:first-child),
+  .body :global(h3:first-child) {
+    margin-top: 0;
+  }
+
+  /*
+    A rule and a size change, not a giant quote glyph — anti-slop.md rules
+    out decorative quotation marks. Emphasis comes from space and scale.
+  */
+  .body :global(blockquote) {
+    margin: var(--space-12) 0;
+    padding-left: var(--space-6);
+    border-left: 2px solid var(--border);
+    font-size: var(--text-lg);
+    line-height: 1.45;
+    color: var(--fg);
+  }
+
+  .body :global(blockquote p:last-child) {
+    margin-bottom: 0;
+  }
+
+  .body :global(ul),
+  .body :global(ol) {
+    margin: 0 0 var(--space-6);
+    padding-left: var(--space-6);
+  }
+
+  .body :global(li) {
+    margin-bottom: var(--space-2);
+  }
+
+  .body :global(strong) {
+    font-weight: 600;
+  }
+</style>
