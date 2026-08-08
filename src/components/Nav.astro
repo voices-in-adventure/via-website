@@ -83,8 +83,9 @@ const links = [
     mask-repeat: no-repeat;
     -webkit-mask-position: left center;
     mask-position: left center;
-    /* The logo is a link but the site already has its two accent uses
-       spent elsewhere — this one stays neutral, following nav color. */
+    /* Cancels the global hover-underline background-image (BaseLayout's `a`
+       rule) — the logo is a link, but a masked shape isn't the place for the
+       site's underline system to try to draw across. */
     background-image: none;
   }
 
