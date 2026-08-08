@@ -6,7 +6,7 @@
 //
 // This is the one place on the site that needs a client-side script: a
 // clock has to keep running after the page loads.
-import {getTimezoneForCity} from '../lib/cityTimezones'
+import {getTimezoneForCity, getUtcOffsetMinutes} from '../lib/cityTimezones'
 
 interface Props {
   cities: string[]
@@ -14,10 +14,11 @@ interface Props {
 
 const {cities} = Astro.props
 
-const items = cities.map((city) => ({
-  city,
-  timezone: getTimezoneForCity(city),
-}))
+// Ordered west to east, like a wall of office clocks. Publication order would
+// be arbitrary here; longitude is the thing a reader can actually follow.
+const items = cities
+  .map((city) => ({city, timezone: getTimezoneForCity(city)}))
+  .sort((a, b) => getUtcOffsetMinutes(a.timezone) - getUtcOffsetMinutes(b.timezone))
 ---
 
 <div class="ticker" role="group" aria-label="Current local time in cities VIA has published about">
@@ -36,28 +37,29 @@ const items = cities.map((city) => ({
 </div>
 
 <style>
+  /*
+    space-between spreads the readout across the full width it is given — with
+    three cities that lands them left / center / right on the hero's bottom
+    edge. It stays honest at other counts: the first item is always flush
+    left, the last always flush right.
+  */
   .ticker {
     display: flex;
     align-items: baseline;
-    flex-wrap: nowrap;
+    justify-content: space-between;
     gap: var(--space-8);
+    width: 100%;
     padding: var(--space-4) var(--gutter);
     font-family: var(--font-mono);
     font-size: var(--text-sm);
     color: var(--bg);
-    overflow-x: auto;
   }
 
   .ticker-item {
     display: flex;
     align-items: baseline;
-    gap: var(--space-2);
+    gap: var(--space-3);
     white-space: nowrap;
-  }
-
-  .ticker-item + .ticker-item {
-    border-left: 1px solid color-mix(in srgb, var(--bg) 40%, transparent);
-    padding-left: var(--space-8);
   }
 
   .ticker-city {
@@ -65,7 +67,10 @@ const items = cities.map((city) => ({
   }
 
   .ticker-time {
-    color: color-mix(in srgb, var(--bg) 80%, transparent);
+    /* Slightly quieter than the city name so the row reads as label + value,
+       not as two competing pieces of information. */
+    color: color-mix(in srgb, var(--bg) 78%, transparent);
+    font-variant-numeric: tabular-nums;
   }
 </style>
 
