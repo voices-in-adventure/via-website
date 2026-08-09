@@ -1,0 +1,105 @@
+---
+// The hover underline: a hand-drawn stroke that draws itself in, echoing the
+// pen the VIA logo was made with.
+//
+// How to use it: put this inside the element you want underlined, give that
+// element `data-scribble`, `position: relative`, and `display: inline-block`.
+// The stroke sizes itself to that element's width.
+//
+// Two knobs, both optional, set as CSS custom properties on the host:
+//   --scribble-height  how tall the stroke box is (default 0.5em)
+//   --scribble-drop    how far below the text it sits (default 0)
+//
+// Deliberately NOT used on links inside article prose — see
+// components/portable/BodyLink.astro for why those stay a plain rule.
+import {SCRIBBLE_PATHS, SCRIBBLE_VIEWBOX} from '../lib/scribbles'
+---
+
+{/*
+  preserveAspectRatio="none" is the point: the stroke stretches to whatever
+  width the link happens to be, so a short nav link and a long headline each
+  get a full-width underline rather than a centred stamp.
+
+  pathLength="1" normalises every variant to the same nominal length, which is
+  what lets one stroke-dashoffset transition draw all six at the same speed.
+*/}
+<svg
+  class="scribble"
+  viewBox={SCRIBBLE_VIEWBOX}
+  preserveAspectRatio="none"
+  fill="none"
+  aria-hidden="true"
+>
+  <path d={SCRIBBLE_PATHS[0]} pathLength="1" stroke-width="10" stroke-linecap="round"></path>
+</svg>
+
+<style>
+  .scribble {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + var(--scribble-drop, 0px));
+    height: var(--scribble-height, 0.5em);
+    /* Round caps sit slightly proud of the viewBox at this stroke weight. */
+    overflow: visible;
+    /* The link owns the hover, not the decoration drawn under it. */
+    pointer-events: none;
+  }
+
+  .scribble path {
+    stroke: var(--accent);
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    transition: stroke-dashoffset 420ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /*
+    The hover lives on the host element, which belongs to whichever component
+    used this one — hence :global on that half of the selector.
+  */
+  :global([data-scribble]:hover) .scribble path,
+  :global([data-scribble]:focus-visible) .scribble path {
+    stroke-dashoffset: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .scribble path {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  /*
+    Cycles the stroke shape so hovering the same link twice doesn't draw the
+    identical squiggle. Astro bundles this once per page no matter how many
+    scribbles are on it.
+
+    The swap happens after the stroke has retracted, never while it is on
+    screen — changing `d` mid-animation would read as a glitch rather than a
+    different pen stroke. The :hover guard covers a reader who comes straight
+    back before the retract finishes; they just see the same variant again.
+  */
+  import {SCRIBBLE_PATHS} from '../lib/scribbles'
+
+  const RETRACT_MS = 460
+
+  let next = Math.floor(Math.random() * SCRIBBLE_PATHS.length)
+
+  for (const host of document.querySelectorAll<HTMLElement>('[data-scribble]')) {
+    const path = host.querySelector('path')
+    if (!path) continue
+
+    const advance = () => {
+      if (host.matches(':hover, :focus-visible')) return
+      next = (next + 1) % SCRIBBLE_PATHS.length
+      path.setAttribute('d', SCRIBBLE_PATHS[next])
+    }
+
+    // Stagger the starting shape so two links side by side aren't twins.
+    advance()
+
+    host.addEventListener('mouseleave', () => window.setTimeout(advance, RETRACT_MS))
+    host.addEventListener('blur', () => window.setTimeout(advance, RETRACT_MS))
+  }
+</script>
