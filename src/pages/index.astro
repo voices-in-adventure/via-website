@@ -292,8 +292,13 @@ const HOUSE_HEROES = [
     color enters the codebase and a palette change still propagates from
     tokens.css.
 
+    There used to be a third gradient here darkening the top of the hero for
+    the nav. It has moved into Nav.astro, because the masthead now needs a
+    much taller treatment than this one reached and needs it on article pages
+    too — see the note there. What is left covers the two zones that belong to
+    the hero itself.
+
     Worst case per zone (the photo that sets the floor):
-      top (nav/logo)   Hero6  ~5.0:1
       mid (mission)    Hero7  ~5.3:1
       bottom (ticker)  Hero5  ~11.4:1
   */
@@ -301,11 +306,6 @@ const HOUSE_HEROES = [
     position: absolute;
     inset: 0;
     background:
-      linear-gradient(
-        to bottom,
-        color-mix(in srgb, var(--fg) 75%, transparent) 0%,
-        transparent 34%
-      ),
       linear-gradient(
         to top,
         color-mix(in srgb, var(--fg) 82%, transparent) 0%,
