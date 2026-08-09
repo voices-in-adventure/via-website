@@ -46,10 +46,6 @@ const asOfFormatter = new Intl.DateTimeFormat('en-US', {
       {article.heroCaption && <figcaption>{article.heroCaption}</figcaption>}
     </figure>
 
-    {/* Zero-height marker at the hero/content seam — see index.astro's
-        .scroller for why this can't be the section itself. */}
-    <div data-nav-boundary aria-hidden="true"></div>
-
     <header class="article-head">
       <p class="kicker">
         <span class="kicker-label">{kicker.label}</span>{kicker.city && ` — ${kicker.city}`}
