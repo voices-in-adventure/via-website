@@ -88,31 +88,16 @@ const kicker = articleKickerParts(article)
   }
 
   /*
-    The rule lives on an inner inline span, not on the heading itself. A
-    background on a wrapped inline box is painted once across the whole box,
-    which puts a single full-width rule under the last line; box-decoration-break
-    gives each line its own, so the underline follows a two-line headline
-    the way it follows a one-line one.
+    The scribble is drawn under this span, so it needs to be a block the
+    stroke can measure itself against. inline-block means a one-line headline
+    gets a stroke the width of its text; a headline that wraps gets one the
+    width of the title column, drawn under the last line.
   */
   .card-title-text {
-    -webkit-box-decoration-break: clone;
-    box-decoration-break: clone;
-    background-image: linear-gradient(var(--accent), var(--accent));
-    background-repeat: no-repeat;
-    background-position: 0 100%;
-    background-size: 0% 1px;
-    transition: background-size 260ms ease;
-  }
-
-  .card-link:hover .card-title-text,
-  .card-link:focus-visible .card-title-text {
-    background-size: 100% 1px;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .card-title-text {
-      transition: none;
-    }
+    position: relative;
+    display: inline-block;
+    --scribble-height: 0.7em;
+    --scribble-drop: -0.28em;
   }
 
   .card-dek {
