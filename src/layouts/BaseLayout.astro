@@ -73,16 +73,16 @@ const {title, description, hasHero = false} = Astro.props
   }
 
   /*
-    Link text stays whatever color it sits in — only the hover underline is
-    colored, and it's one of the site's two sanctioned accent uses (the other
-    is the "Dispatch"/"Signal" kicker labels). Every link on the site shares
-    this one underline system, so it counts as a single use per anti-slop.md's
-    two-per-screen budget rather than one per link.
+    The site's hover underline is the hand-drawn scribble (Scribble.astro),
+    used on the masthead, the footer, and headline links. This rule is only
+    the fallback for any link that is none of those — set in currentColor, not
+    accent, so the site carries one blue underline language rather than two.
+    Anything using the scribble cancels this with `background-image: none`.
 
-    BodyLink.astro (links inside article prose) intentionally does NOT use
-    this rule — it has its own always-on --fg underline, because a single
-    article can carry a dozen inline links and coloring all of them accent
-    would blow the budget by itself. See the comment there.
+    BodyLink.astro (links inside article prose) opts out of both — it has its
+    own always-on --fg underline, because a single article can carry a dozen
+    inline links and drawing scribbles under all of them would be a mess. See
+    the comment there.
 
     The rule is a background gradient rather than text-decoration because only
     background-size is animatable; the underline grows from the left on hover
@@ -91,7 +91,7 @@ const {title, description, hasHero = false} = Astro.props
   a {
     color: inherit;
     text-decoration: none;
-    background-image: linear-gradient(var(--accent), var(--accent));
+    background-image: linear-gradient(currentColor, currentColor);
     background-repeat: no-repeat;
     background-position: 0 100%;
     background-size: 0% 1px;
