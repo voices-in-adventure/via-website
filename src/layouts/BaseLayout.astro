@@ -38,7 +38,7 @@ const {title, description, hasHero = false} = Astro.props
     {description && <meta name="description" content={description} />}
   </head>
   <body>
-    <Nav />
+    <Nav hasHero={hasHero} />
     <slot />
     <Footer />
   </body>
