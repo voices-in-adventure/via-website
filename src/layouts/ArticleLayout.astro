@@ -30,6 +30,8 @@ const formatLabel = article.format ? formatLabels[article.format] : null
 
 const tags = [...(article.places ?? []), ...(article.reasons ?? [])].map((t) => t.title)
 
+const kicker = articleKickerParts(article)
+
 const asOfFormatter = new Intl.DateTimeFormat('en-US', {
   month: 'long',
   day: 'numeric',
