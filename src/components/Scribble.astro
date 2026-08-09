@@ -34,10 +34,16 @@ import {SCRIBBLE_PATHS, SCRIBBLE_VIEWBOX} from '../lib/scribbles'
 </svg>
 
 <style>
+  /*
+    width is set explicitly because an <svg> is a replaced element: given
+    left/right and a height it would size itself from its own 310:40 aspect
+    ratio and ignore the box it is sitting in. The script below then narrows
+    it to the last line of text.
+  */
   .scribble {
     position: absolute;
     left: 0;
-    right: 0;
+    width: 100%;
     top: calc(100% + var(--scribble-drop, 0px));
     height: var(--scribble-height, 0.5em);
     /* Round caps sit slightly proud of the viewBox at this stroke weight. */
