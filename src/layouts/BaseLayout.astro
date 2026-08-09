@@ -16,9 +16,15 @@ import Footer from '../components/Footer.astro'
 interface Props {
   title: string
   description?: string
+  /**
+   * Does this page open with full-bleed hero art? The masthead needs to know
+   * before it paints: over a photo it starts expanded and light, and on a
+   * page without one it has to start as the compact solid bar instead.
+   */
+  hasHero?: boolean
 }
 
-const {title, description} = Astro.props
+const {title, description, hasHero = false} = Astro.props
 ---
 
 <html lang="en">
