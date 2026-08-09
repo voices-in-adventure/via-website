@@ -74,6 +74,16 @@ const links = [
     --logo-w-short: 96px;
     --logo-h-short: 44px;
 
+    /*
+      Where the nav links' text baseline sits above the rule, measured: their
+      line box bottom is --space-3 up, and the baseline is another 6px above
+      that (Poppins' descent plus half-leading at --text-sm). The wordmark's
+      own ink runs to the very bottom of its box, so giving the logo this same
+      offset puts the mark and the words on one line. Re-measure if --text-sm,
+      the link line-height, or the utility face changes.
+    */
+    --logo-baseline: 19px;
+
     --logo-w: calc(var(--logo-w-tall) + (var(--logo-w-short) - var(--logo-w-tall)) * var(--masthead-t));
     --logo-h: calc(var(--logo-h-tall) + (var(--logo-h-short) - var(--logo-h-tall)) * var(--masthead-t));
     --masthead-h: calc(
