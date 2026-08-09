@@ -171,20 +171,8 @@ const HOUSE_HEROES = [
     Everything below the hero scrolls up over it. It needs its own stacking
     context and an opaque background for that to read as one surface passing
     in front of another rather than as a rendering bug.
-
-    data-nav-boundary marks where the hero photo ends and solid page content
-    begins — Nav.astro watches this to know when to switch from transparent
-    to solid.
   */}
   <div class="scroller">
-    {/*
-      A zero-height marker, not the section itself — Nav's IntersectionObserver
-      needs a thin point exactly at the hero/content seam. A tall element's
-      intersection ratio can sit fully inside the observer's shrunk root for
-      the entire scroll range where the seam actually crosses the nav, never
-      triggering a callback at the right moment.
-    */}
-    <div data-nav-boundary aria-hidden="true"></div>
     <section class="featured">
       <h2 class="section-heading">Editor&rsquo;s Picks</h2>
       <div class="featured-grid">
