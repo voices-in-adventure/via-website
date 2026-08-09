@@ -39,7 +39,7 @@ const asOfFormatter = new Intl.DateTimeFormat('en-US', {
 })
 ---
 
-<BaseLayout title={`${article.title} — VIA`} description={article.dek}>
+<BaseLayout title={`${article.title} — VIA`} description={article.dek} hasHero>
   <article class="article">
     <figure class="article-hero">
       <img src={heroUrl} alt={article.title} />
