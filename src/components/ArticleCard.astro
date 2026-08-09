@@ -3,14 +3,17 @@
 // today, Stories/Journeys/Resources once they exist. Extracted from the
 // homepage so all four places render the same markup instead of drifting
 // apart the first time one of them is edited.
+import Scribble from './Scribble.astro'
 import {urlFor} from '../lib/sanity'
-import {articleHref, articleKicker, formatDate, type ArticleCard} from '../lib/articles'
+import {articleHref, articleKickerParts, formatDate, type ArticleCard} from '../lib/articles'
 
 interface Props {
   article: ArticleCard
 }
 
 const {article} = Astro.props
+
+const kicker = articleKickerParts(article)
 ---
 
 <article class="card">
