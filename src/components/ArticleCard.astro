@@ -27,9 +27,15 @@ const kicker = articleKickerParts(article)
         />
       )
     }
-    <p class="card-kicker">{articleKicker(article)}</p>
+    <p class="card-kicker">
+      <span class="card-kicker-label">{kicker.label}</span>
+      {kicker.city && <>&#8202;—&#8202;{kicker.city}</>}
+    </p>
     <h3 class="card-title">
-      <span class="card-title-text">{article.title}</span>
+      <span class="card-title-text" data-scribble>
+        {article.title}
+        <Scribble />
+      </span>
     </h3>
     <p class="card-dek">{article.dek}</p>
     <p class="card-byline">
