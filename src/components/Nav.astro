@@ -172,10 +172,14 @@ const links = [
   /*
     Centred at t=0, flush to the gutter at t=1. The wordmark is the only thing
     that moves horizontally.
+
+    Anchored from the bottom, not the top, so it shares a baseline with the
+    links while the masthead is open. At t=1 it settles at --space-4, which
+    centres it in the compact bar.
   */
   .masthead-logo {
     position: absolute;
-    top: calc(var(--space-8) + (var(--space-4) - var(--space-8)) * var(--masthead-t));
+    bottom: calc(var(--logo-baseline) + (var(--space-4) - var(--logo-baseline)) * var(--masthead-t));
     left: calc(
       (100% - var(--logo-w)) / 2 * (1 - var(--masthead-t)) + var(--gutter) * var(--masthead-t)
     );
