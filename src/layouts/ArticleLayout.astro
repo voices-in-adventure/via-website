@@ -147,12 +147,19 @@ const asOfFormatter = new Intl.DateTimeFormat('en-US', {
     margin-bottom: var(--space-16);
   }
 
-  /* One of the site's two sanctioned accent uses — see anti-slop.md's
-     two-per-screen budget. The other is the hover-underline system. */
+  /*
+    Only "Dispatch"/"Signal" takes the accent. The city, the separators, the
+    format, and the duration all stay muted — the accent marks what the piece
+    is, not the whole metadata line.
+  */
   .kicker {
     margin: 0 0 var(--space-4);
     font-family: var(--font-sans);
     font-size: var(--text-xs);
+    color: var(--muted);
+  }
+
+  .kicker-label {
     color: var(--accent);
   }
 
