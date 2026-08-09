@@ -207,6 +207,14 @@ const HOUSE_HEROES = [
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
+    /*
+      Reserves the expanded masthead's full height. The masthead is fixed, so
+      it can't push anything down on its own; without this, a short enough
+      window would let the mission statement run up underneath the wordmark.
+      Nothing collides at normal desktop heights today — this makes it
+      impossible at any height.
+    */
+    padding-top: var(--masthead-tall);
   }
 
   /*
