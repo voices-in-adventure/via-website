@@ -3,6 +3,11 @@
 // siteSettings rather than taking them as a prop, so every current and
 // future page gets a working footer without having to remember to wire one
 // through — see docs/content-model.md, "siteSettings."
+//
+// Every column is built in the frontmatter and rendered by one loop below.
+// That is partly tidiness and partly so the hover scribble is attached in a
+// single place instead of six.
+import Scribble from './Scribble.astro'
 import {sanityClient} from '../lib/sanity'
 
 interface SocialLink {
@@ -24,12 +29,18 @@ const settings = await sanityClient.fetch<FooterSettings | null>(
   }`,
 )
 
-const navLinks = [
-  {label: 'Stories', href: '/stories'},
-  {label: 'Journeys', href: '/journeys'},
-  {label: 'Resources', href: '/resources'},
-  {label: 'About', href: '/about'},
-]
+interface FooterLink {
+  label: string
+  href: string
+  external?: boolean
+}
+
+interface FooterColumn {
+  heading: string
+  /** Set when the column is genuinely navigation and wants a landmark. */
+  landmark?: string
+  links: FooterLink[]
+}
 
 const platformLabels: Record<string, string> = {
   instagram: 'Instagram',
@@ -38,6 +49,47 @@ const platformLabels: Record<string, string> = {
   linkedin: 'LinkedIn',
   other: 'Other',
 }
+
+/** Drops anything whose URL isn't set in Sanity yet, rather than inventing one. */
+const present = (links: (FooterLink | null)[]): FooterLink[] =>
+  links.filter((link): link is FooterLink => link !== null)
+
+const columns: FooterColumn[] = [
+  {
+    heading: 'Explore',
+    landmark: 'Site',
+    links: [
+      {label: 'Stories', href: '/stories'},
+      {label: 'Journeys', href: '/journeys'},
+      {label: 'Resources', href: '/resources'},
+      {label: 'About', href: '/about'},
+    ],
+  },
+  {
+    heading: 'Subscribe',
+    links: present([
+      settings?.dispatchSubscribeUrl
+        ? {label: 'Dispatches', href: settings.dispatchSubscribeUrl}
+        : null,
+      settings?.signalsSubscribeUrl ? {label: 'Signals', href: settings.signalsSubscribeUrl} : null,
+    ]),
+  },
+  {
+    heading: 'Connect',
+    links: (settings?.socialLinks ?? []).map((link) => ({
+      label: platformLabels[link.platform] ?? link.platform,
+      href: link.url,
+      external: true,
+    })),
+  },
+  {
+    heading: 'Contribute',
+    links: present([
+      settings?.pitchUsUrl ? {label: 'Pitch us', href: settings.pitchUsUrl} : null,
+      settings?.feedbackUrl ? {label: 'Give feedback', href: settings.feedbackUrl} : null,
+    ]),
+  },
+].filter((column) => column.links.length > 0)
 ---
 
 <footer class="footer">
@@ -46,74 +98,30 @@ const platformLabels: Record<string, string> = {
       <a class="footer-logo" href="/" aria-label="VIA — Voices in Adventure, home"></a>
     </div>
 
-    <nav class="footer-col" aria-label="Site">
-      <p class="footer-heading">Explore</p>
-      <ul class="footer-list">
-        {
-          navLinks.map((link) => (
-            <li>
-              <a href={link.href}>{link.label}</a>
-            </li>
-          ))
-        }
-      </ul>
-    </nav>
-
     {
-      (settings?.dispatchSubscribeUrl || settings?.signalsSubscribeUrl) && (
-        <div class="footer-col">
-          <p class="footer-heading">Subscribe</p>
-          <ul class="footer-list">
-            {settings.dispatchSubscribeUrl && (
-              <li>
-                <a href={settings.dispatchSubscribeUrl}>Dispatches</a>
-              </li>
-            )}
-            {settings.signalsSubscribeUrl && (
-              <li>
-                <a href={settings.signalsSubscribeUrl}>Signals</a>
-              </li>
-            )}
-          </ul>
-        </div>
-      )
-    }
-
-    {
-      settings?.socialLinks && settings.socialLinks.length > 0 && (
-        <div class="footer-col">
-          <p class="footer-heading">Connect</p>
-          <ul class="footer-list">
-            {settings.socialLinks.map((link) => (
-              <li>
-                <a href={link.url} target="_blank" rel="noopener noreferrer">
-                  {platformLabels[link.platform] ?? link.platform}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )
-    }
-
-    {
-      (settings?.pitchUsUrl || settings?.feedbackUrl) && (
-        <div class="footer-col">
-          <p class="footer-heading">Contribute</p>
-          <ul class="footer-list">
-            {settings.pitchUsUrl && (
-              <li>
-                <a href={settings.pitchUsUrl}>Pitch us</a>
-              </li>
-            )}
-            {settings.feedbackUrl && (
-              <li>
-                <a href={settings.feedbackUrl}>Give feedback</a>
-              </li>
-            )}
-          </ul>
-        </div>
-      )
+      columns.map((column) => {
+        const Wrapper = column.landmark ? 'nav' : 'div'
+        return (
+          <Wrapper class="footer-col" aria-label={column.landmark}>
+            <p class="footer-heading">{column.heading}</p>
+            <ul class="footer-list">
+              {column.links.map((link) => (
+                <li>
+                  <a
+                    href={link.href}
+                    data-scribble
+                    target={link.external ? '_blank' : undefined}
+                    rel={link.external ? 'noopener noreferrer' : undefined}
+                  >
+                    {link.label}
+                    <Scribble />
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </Wrapper>
+        )
+      })
     }
   </div>
 </footer>
@@ -172,6 +180,7 @@ const platformLabels: Record<string, string> = {
   .footer-list {
     display: flex;
     flex-direction: column;
+    align-items: flex-start;
     gap: var(--space-2);
     margin: 0;
     padding: 0;
@@ -182,5 +191,12 @@ const platformLabels: Record<string, string> = {
 
   .footer-list a {
     color: var(--fg);
+    /* The scribble measures itself against this box. */
+    position: relative;
+    display: inline-block;
+    --scribble-height: 0.85em;
+    --scribble-drop: -0.15em;
+    /* These links use the scribble, not the site-wide fallback underline. */
+    background-image: none;
   }
 </style>
