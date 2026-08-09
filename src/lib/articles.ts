@@ -79,6 +79,22 @@ export function articleKicker(article: {_type: string; city?: string | null}): s
   return article.city ? `${label} — ${article.city}` : label
 }
 
+/**
+ * The same kicker, but split so the product name can be colored on its own.
+ * Only "Dispatch"/"Signal" carries the accent — the city and the dash stay
+ * muted, which keeps the accent on the one word that identifies what the
+ * piece is. Templates that need the flat string still use articleKicker().
+ */
+export function articleKickerParts(article: {_type: string; city?: string | null}): {
+  label: string
+  city: string | null
+} {
+  return {
+    label: article._type === 'signal' ? 'Signal' : 'Dispatch',
+    city: article.city ?? null,
+  }
+}
+
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
   month: 'long',
   day: 'numeric',
