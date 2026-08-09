@@ -63,4 +63,13 @@
   --radius: 4px; /* consistent everywhere it applies; nothing is pill-shaped */
   --measure: 68ch; /* article column */
   --gutter: var(--space-6);
+
+  /* ---- Layout: masthead ----
+     The two heights the site masthead travels between as it collapses on
+     scroll. Declared here rather than in Nav.astro because the homepage hero
+     also needs the tall one — it reserves that much clearance so nothing can
+     ever sit under an expanded masthead. Changing the masthead's size stays
+     a one-file edit. */
+  --masthead-tall: 224px;
+  --masthead-short: 76px;
 }
