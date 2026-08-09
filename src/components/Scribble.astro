@@ -108,4 +108,38 @@ import {SCRIBBLE_PATHS, SCRIBBLE_VIEWBOX} from '../lib/scribbles'
     host.addEventListener('mouseleave', () => window.setTimeout(advance, RETRACT_MS))
     host.addEventListener('blur', () => window.setTimeout(advance, RETRACT_MS))
   }
+
+  /*
+    Narrows each stroke to the last line of the text it underlines.
+
+    CSS alone can only stretch it across the whole box, which is right for a
+    one-line nav link but wrong for a headline that wraps — there the box is
+    the full column and the last line is usually much shorter, so the stroke
+    would run out past the end of the words and read as a mistake. A Range
+    over the text reports one rectangle per line; the last one is the line the
+    underline belongs under.
+  */
+  for (const svg of document.querySelectorAll<SVGSVGElement>('svg.scribble')) {
+    const holder = svg.parentElement
+    if (!holder) continue
+
+    // Only the text, never the svg itself — it is a sibling in this box.
+    const text = [...holder.childNodes].filter((node) => node.nodeType === Node.TEXT_NODE)
+    if (text.length === 0) continue
+
+    const fit = () => {
+      const range = document.createRange()
+      range.setStart(text[0], 0)
+      range.setEndAfter(text[text.length - 1])
+      const lines = [...range.getClientRects()].filter((r) => r.width > 0)
+      if (lines.length === 0) return
+      const last = lines[lines.length - 1]
+      const box = holder.getBoundingClientRect()
+      svg.style.width = `${last.width}px`
+      svg.style.left = `${last.left - box.left}px`
+    }
+
+    // Fires once immediately, and again whenever the line breaks change.
+    new ResizeObserver(fit).observe(holder)
+  }
 </script>
