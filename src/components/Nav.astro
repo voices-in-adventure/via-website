@@ -1,17 +1,34 @@
 ---
-// Present on every page (rendered once from BaseLayout). Starts transparent
-// over whatever hero photo a page has — it sits inside the same top-of-hero
-// scrim gradient that already darkens that zone for the logo, so it stays
-// legible without a scrim of its own — and turns solid the moment opaque
-// page content scrolls up to meet it.
+// The masthead. Present on every page, rendered once from BaseLayout.
 //
-// "The moment opaque content meets it" isn't a fixed scroll distance: the
-// homepage hero is 100vh and sticky, an article hero is 62vh and static. So
-// instead of a scrollY threshold, this watches whichever element on the
-// current page carries `data-nav-boundary` — the point where hero art ends
-// and solid page background begins — and flips to solid exactly when that
-// point reaches behind the nav bar. A page with no such marker (no hero at
-// all) just starts solid, which is the right default for it.
+// Two states, and it travels continuously between them rather than snapping:
+//
+//   At the top of a page with a hero, the wordmark sits large and centred
+//   over the photo on a transparent ground, with a hairline running the full
+//   width beneath it and the nav links sitting on that line at its right end.
+//
+//   As you scroll, the wordmark shrinks and slides left, the whole block
+//   compresses, and the hairline becomes the bottom edge of a solid bar —
+//   small logo left, links right. It is the same rule the whole way; nothing
+//   is swapped out or faded in.
+//
+// The links are right-aligned in BOTH states on purpose. Only the wordmark
+// travels, into the space the expanded state leaves empty on the left, which
+// is what keeps the movement calm — and it avoids the dead symmetry
+// anti-slop.md warns about.
+//
+// `hasHero` is what tells the masthead it is allowed to start expanded and
+// light-on-photo. A page that doesn't pass it (any future page with no hero
+// image at the top) gets the compact solid bar from the first paint, which is
+// the only correct thing there — a white wordmark on a white page is not.
+import Scribble from './Scribble.astro'
+
+interface Props {
+  hasHero?: boolean
+}
+
+const {hasHero = false} = Astro.props
+
 const links = [
   {label: 'Stories', href: '/stories'},
   {label: 'Journeys', href: '/journeys'},
@@ -20,61 +37,94 @@ const links = [
 ]
 ---
 
-<nav class="nav" id="site-nav">
-  <div class="nav-inner">
-    <a class="nav-logo" href="/" aria-label="VIA — Voices in Adventure, home"></a>
-    <ul class="nav-links">
-      {
-        links.map((link) => (
-          <li>
-            <a href={link.href}>{link.label}</a>
-          </li>
-        ))
-      }
-    </ul>
-  </div>
+<nav class:list={['masthead', hasHero && 'masthead--hero']} id="site-masthead">
+  <a class="masthead-logo" href="/" aria-label="VIA — Voices in Adventure, home"></a>
+  <ul class="masthead-links">
+    {
+      links.map((link) => (
+        <li>
+          <a href={link.href} data-scribble>
+            {link.label}
+            <Scribble />
+          </a>
+        </li>
+      ))
+    }
+  </ul>
 </nav>
 
 <style>
-  .nav {
+  /*
+    One number drives the whole transformation: 0 is fully expanded, 1 is
+    fully compact. Registering it as a real <number> is what makes the
+    calc()s below legal and interpolable.
+
+    initial-value: 1 means the safe state — a solid, legible bar — is what you
+    get with no JavaScript, on a page with no hero, and before any script has
+    run. Only .masthead--hero opts into starting expanded.
+  */
+  @property --masthead-t {
+    syntax: '<number>';
+    inherits: true;
+    initial-value: 1;
+  }
+
+  .masthead {
+    /* The two ends of every journey below. Read each calc() as
+       "start at the tall value, travel to the short one as t goes 0 → 1." */
+    --logo-w-tall: 300px;
+    --logo-h-tall: 138px;
+    --logo-w-short: 96px;
+    --logo-h-short: 44px;
+
+    --logo-w: calc(var(--logo-w-tall) + (var(--logo-w-short) - var(--logo-w-tall)) * var(--masthead-t));
+    --logo-h: calc(var(--logo-h-tall) + (var(--logo-h-short) - var(--logo-h-tall)) * var(--masthead-t));
+
+    /* The hairline over photography. Measured against the eight house hero
+       photos at the line it actually lands on, not guessed — see the note in
+       index.astro about how the hero scrim was tuned the same way. */
+    --rule-over-photo: color-mix(in srgb, var(--bg) 78%, transparent);
+
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     z-index: 50;
-    background-color: transparent;
-    border-bottom: 1px solid transparent;
-    color: var(--bg);
-    transition:
-      background-color 200ms ease,
-      border-color 200ms ease,
-      color 200ms ease;
+    height: calc(var(--masthead-tall) + (var(--masthead-short) - var(--masthead-tall)) * var(--masthead-t));
+    background-color: color-mix(in srgb, var(--bg) calc(var(--masthead-t) * 100%), transparent);
+    /* The one rule. Over the hero it is a light hairline on the photo; in the
+       compact bar it is that bar's bottom edge. Same element throughout. */
+    border-bottom: 1px solid
+      color-mix(in srgb, var(--border) calc(var(--masthead-t) * 100%), var(--rule-over-photo));
   }
 
-  .nav--solid {
-    background-color: var(--bg);
-    border-bottom-color: var(--border);
-    color: var(--fg);
+  .masthead--hero {
+    --masthead-t: 0;
   }
 
+  /* Asked to hold the compact state, so hold it — from the first paint, and
+     the script below never attaches. */
   @media (prefers-reduced-motion: reduce) {
-    .nav {
-      transition: none;
+    .masthead--hero {
+      --masthead-t: 1;
     }
   }
 
-  .nav-inner {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: var(--space-4) var(--gutter);
-  }
-
-  .nav-logo {
-    display: block;
-    width: 96px;
-    height: 44px;
-    background-color: currentColor;
+  /*
+    Centred at t=0, flush to the gutter at t=1. The wordmark is the only thing
+    that moves horizontally.
+  */
+  .masthead-logo {
+    position: absolute;
+    top: calc(var(--space-8) + (var(--space-4) - var(--space-8)) * var(--masthead-t));
+    left: calc(
+      (100% - var(--logo-w)) / 2 * (1 - var(--masthead-t)) + var(--gutter) * var(--masthead-t)
+    );
+    width: var(--logo-w);
+    height: var(--logo-h);
+    /* White over the photo, VIA blue in the solid bar. The logo is a masked
+       shape, so its colour is just a background-color — no second asset. */
+    background-color: color-mix(in srgb, var(--accent) calc(var(--masthead-t) * 100%), var(--bg));
     -webkit-mask-image: url('/VIALogo.svg');
     mask-image: url('/VIALogo.svg');
     -webkit-mask-size: contain;
@@ -83,13 +133,20 @@ const links = [
     mask-repeat: no-repeat;
     -webkit-mask-position: left center;
     mask-position: left center;
-    /* Cancels the global hover-underline background-image (BaseLayout's `a`
-       rule) — the logo is a link, but a masked shape isn't the place for the
-       site's underline system to try to draw across. */
+    /* Cancels BaseLayout's fallback hover underline — a masked shape is not
+       the place for a rule to try to draw across. */
     background-image: none;
   }
 
-  .nav-links {
+  /*
+    Pinned to the bottom of the masthead in both states, so the links simply
+    ride up as the block compresses. They sit on the rule at t=0 and are
+    optically centred in the bar at t=1.
+  */
+  .masthead-links {
+    position: absolute;
+    right: var(--gutter);
+    bottom: calc(var(--space-3) + var(--space-4) * var(--masthead-t));
     display: flex;
     align-items: center;
     gap: var(--space-8);
@@ -98,31 +155,56 @@ const links = [
     list-style: none;
     font-family: var(--font-sans);
     font-size: var(--text-sm);
+    line-height: 1.5;
+    color: color-mix(in srgb, var(--fg) calc(var(--masthead-t) * 100%), var(--bg));
   }
 
-  .nav-links a {
+  .masthead-links a {
     color: inherit;
+    /* The scribble positions itself against this box. */
+    position: relative;
+    display: inline-block;
+    --scribble-height: 0.85em;
+    --scribble-drop: -0.15em;
+    /* This link's underline is the scribble, not the site-wide fallback. */
+    background-image: none;
   }
 </style>
 
 <script>
-  const nav = document.getElementById('site-nav')
-  const boundary = document.querySelector<HTMLElement>('[data-nav-boundary]')
+  /*
+    Maps scroll position onto the masthead's one variable. The travel distance
+    is exactly the height the masthead loses, which means the hairline appears
+    to hold still in the document while the block compresses around it.
 
-  function applySolid(boundaryTop: number) {
-    if (!nav) return
-    nav.classList.toggle('nav--solid', boundaryTop <= nav.offsetHeight)
-  }
+    Reads both heights back out of CSS rather than repeating them here, so the
+    numbers stay in one place.
+  */
+  const masthead = document.getElementById('site-masthead')
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-  if (!nav) {
-    // no-op
-  } else if (!boundary) {
-    nav.classList.add('nav--solid')
-  } else {
-    const observer = new IntersectionObserver(
-      (entries) => applySolid(entries[entries.length - 1].boundingClientRect.top),
-      {rootMargin: `-${nav.offsetHeight}px 0px 0px 0px`, threshold: [0, 1]},
-    )
-    observer.observe(boundary)
+  if (masthead && masthead.classList.contains('masthead--hero') && !reduceMotion) {
+    const styles = getComputedStyle(masthead)
+    const tall = parseFloat(styles.getPropertyValue('--masthead-tall'))
+    const short = parseFloat(styles.getPropertyValue('--masthead-short'))
+    const range = Math.max(tall - short, 1)
+
+    let queued = false
+
+    const update = () => {
+      queued = false
+      const t = Math.min(Math.max(window.scrollY / range, 0), 1)
+      masthead.style.setProperty('--masthead-t', String(t))
+    }
+
+    const onScroll = () => {
+      if (queued) return
+      queued = true
+      requestAnimationFrame(update)
+    }
+
+    // Covers a reload part-way down the page, where scrollY is already > 0.
+    update()
+    window.addEventListener('scroll', onScroll, {passive: true})
   }
 </script>
