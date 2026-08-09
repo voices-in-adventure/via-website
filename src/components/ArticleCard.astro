@@ -58,12 +58,19 @@ const kicker = articleKickerParts(article)
     margin-bottom: var(--space-4);
   }
 
-  /* One of the site's two sanctioned accent uses — see anti-slop.md's
-     two-per-screen budget. The other is the hover-underline system below. */
+  /*
+    Only the word that says what the piece is takes the accent. The city and
+    the dash stay muted — colouring the whole string turned the accent into a
+    label background rather than a signal.
+  */
   .card-kicker {
     margin: 0 0 var(--space-2);
     font-family: var(--font-sans);
     font-size: var(--text-xs);
+    color: var(--muted);
+  }
+
+  .card-kicker-label {
     color: var(--accent);
   }
 
