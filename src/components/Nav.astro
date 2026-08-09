@@ -149,6 +149,15 @@ const links = [
     }
   }
 
+  /* Nothing to drive the collapse without a script, and an expanded masthead
+     that never collapses would sit over the page for the whole scroll. Hold
+     the compact bar instead. */
+  @media (scripting: none) {
+    .masthead--hero {
+      --masthead-t: 1;
+    }
+  }
+
   /*
     Centred at t=0, flush to the gutter at t=1. The wordmark is the only thing
     that moves horizontally.
