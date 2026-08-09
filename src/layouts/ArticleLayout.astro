@@ -52,7 +52,7 @@ const asOfFormatter = new Intl.DateTimeFormat('en-US', {
 
     <header class="article-head">
       <p class="kicker">
-        {articleKicker(article)}
+        <span class="kicker-label">{kicker.label}</span>{kicker.city && ` — ${kicker.city}`}
         {formatLabel && <span class="kicker-sep">·</span>}
         {formatLabel}
         {article.duration && <span class="kicker-sep">·</span>}
