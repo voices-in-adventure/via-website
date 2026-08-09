@@ -70,6 +70,6 @@
      also needs the tall one — it reserves that much clearance so nothing can
      ever sit under an expanded masthead. Changing the masthead's size stays
      a one-file edit. */
-  --masthead-tall: 168px;
+  --masthead-tall: 120px;
   --masthead-short: 76px;
 }
