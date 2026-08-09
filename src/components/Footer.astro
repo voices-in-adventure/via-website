@@ -112,10 +112,7 @@ const columns: FooterColumn[] = [
                     data-scribble
                     target={link.external ? '_blank' : undefined}
                     rel={link.external ? 'noopener noreferrer' : undefined}
-                  >
-                    {link.label}
-                    <Scribble />
-                  </a>
+                  >{link.label}<Scribble /></a>
                 </li>
               ))}
             </ul>
