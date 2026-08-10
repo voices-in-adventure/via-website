@@ -74,8 +74,28 @@ export const ARTICLE_PROJECTION = `
   duration,
   newsPeg,
   informationAsOf,
-  places[]->{title},
-  reasons[]->{title}
+  places[]->{title, "slug": slug.current, color},
+  reasons[]->{title, "slug": slug.current}
+`
+
+/**
+ * Every published article carrying a given tag, newest first. Both Journeys
+ * archive types run this with $id bound to the place or reason document —
+ * references() matches whichever array the tag sits in, so one query serves
+ * both axes.
+ */
+export const TAGGED_ARTICLES = `
+  *[_type in ["dispatch", "signal"] && publishedAt <= now() && references($id)]
+    | order(publishedAt desc){${CARD_PROJECTION}}
+`
+
+/**
+ * How many published articles carry a tag. Written as a projection fragment
+ * because the Journeys landing page needs it once per tag, inside the tag
+ * query — ^._id is the tag being projected.
+ */
+export const TAG_COUNT = `
+  "count": count(*[_type in ["dispatch", "signal"] && publishedAt <= now() && references(^._id)])
 `
 
 /**
