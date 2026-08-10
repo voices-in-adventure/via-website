@@ -1,0 +1,105 @@
+---
+// A place or a reason on the Journeys landing page. Not an article, so not
+// ArticleCard — there is no photo, no byline, and no date. What a reader
+// needs in order to pick one is the name, what it covers, and whether there
+// is anything in it yet.
+//
+// The count is shown even when it is zero. A tag with nothing in it is a real
+// state of this site and saying so is more useful than an unmarked link that
+// leads somewhere empty.
+interface Props {
+  href: string
+  title: string
+  description?: string | null
+  count: number
+  /** A place's region color slug. Omitted for reasons. */
+  color?: string | null
+}
+
+const {href, title, description, count, color} = Astro.props
+
+const countLabel = count === 0 ? 'No stories yet' : count === 1 ? '1 story' : `${count} stories`
+---
+
+<article class="tag-card" data-color={color ?? undefined}>
+  <a class="tag-card-link" href={href}>
+    <h3 class="tag-card-title">{title}</h3>
+    {description && <p class="tag-card-description">{description}</p>}
+    <p class="tag-card-count">{countLabel}</p>
+  </a>
+</article>
+
+<style>
+  .tag-card {
+    /* Reasons have no region color; they take the neutral rule. */
+    border-top: 3px solid var(--tag-color, var(--fg));
+  }
+
+  .tag-card-link {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: var(--space-6) 0 var(--space-8);
+    background-image: none;
+  }
+
+  .tag-card-title {
+    margin: 0 0 var(--space-3);
+    font-family: var(--font-serif);
+    font-size: var(--text-lg);
+    font-weight: 500;
+    line-height: 1.25;
+    color: var(--fg);
+    transition: color 180ms ease;
+  }
+
+  /*
+    The title carries the hover, not the whole card. anti-slop.md rules out
+    hover-lift, scale, and glow on cards.
+  */
+  .tag-card-link:hover .tag-card-title,
+  .tag-card-link:focus-visible .tag-card-title {
+    color: var(--accent);
+  }
+
+  .tag-card-description {
+    margin: 0 0 var(--space-6);
+    font-family: var(--font-serif);
+    font-size: var(--text-base);
+    line-height: 1.5;
+    color: var(--muted);
+  }
+
+  /* Pushed to the bottom so counts line up across a row of uneven descriptions. */
+  .tag-card-count {
+    margin: auto 0 0;
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    color: var(--muted);
+  }
+
+  [data-color='europe'] {
+    --tag-color: var(--tag-europe);
+  }
+  [data-color='asia'] {
+    --tag-color: var(--tag-asia);
+  }
+  [data-color='americas'] {
+    --tag-color: var(--tag-americas);
+  }
+  [data-color='africa'] {
+    --tag-color: var(--tag-africa);
+  }
+  [data-color='oceania'] {
+    --tag-color: var(--tag-oceania);
+  }
+  [data-color='mideast'] {
+    --tag-color: var(--tag-mideast);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tag-card-title {
+      transition: none;
+    }
+  }
+</style>
