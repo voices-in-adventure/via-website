@@ -1,0 +1,87 @@
+---
+// The shell for every page that isn't the homepage or an article: Stories,
+// Journeys, Resources, About, and the tag archives.
+//
+// These pages open typographically rather than with photography. A tag
+// archive can't have a hero of its own — there is no one photo that means
+// "Oceania" — and a page that opens with a borrowed image looks different
+// every time an editor publishes. A set headline reads the same on the day a
+// tag has twelve stories and the day it has none.
+//
+// Because there is no hero, BaseLayout is used *without* hasHero, so the
+// masthead is the compact solid bar from first paint. The masthead is fixed
+// and cannot push anything down, so this layout reserves its own clearance.
+import BaseLayout from './BaseLayout.astro'
+
+interface Props {
+  /** The page headline. Also becomes the browser title, with " — VIA" appended. */
+  title: string
+  /** Small label above the headline: "Journeys", "Places to go". */
+  eyebrow?: string
+  /** The sentence under the headline. Sets up what the page is. */
+  standfirst?: string | null
+  /** Meta description. Falls back to the standfirst. */
+  description?: string | null
+}
+
+const {title, eyebrow, standfirst, description} = Astro.props
+---
+
+<BaseLayout title={`${title} — VIA`} description={description ?? standfirst ?? undefined}>
+  <main class="page">
+    <header class="page-head">
+      {eyebrow && <p class="page-eyebrow">{eyebrow}</p>}
+      <h1 class="page-title">{title}</h1>
+      {standfirst && <p class="page-standfirst">{standfirst}</p>}
+    </header>
+
+    <slot />
+  </main>
+</BaseLayout>
+
+<style>
+  /*
+    The masthead is position: fixed, so nothing below it is pushed down.
+    Every page without a hero has to clear it itself.
+  */
+  .page {
+    padding-top: calc(var(--masthead-short) + var(--space-16));
+    padding-bottom: var(--space-32);
+  }
+
+  .page-head {
+    max-width: var(--measure);
+    margin: 0 auto var(--space-16);
+    padding: 0 var(--gutter);
+  }
+
+  .page-eyebrow {
+    margin: 0 0 var(--space-4);
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    letter-spacing: 0.04em;
+    color: var(--muted);
+  }
+
+  /*
+    Display type gets air — via-design.md: line-height 1.05 at the largest
+    sizes, with generous margin.
+  */
+  .page-title {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: var(--text-2xl);
+    font-weight: 500;
+    line-height: 1.05;
+    letter-spacing: -0.015em;
+    color: var(--fg);
+  }
+
+  .page-standfirst {
+    margin: var(--space-6) 0 0;
+    font-family: var(--font-serif);
+    font-size: var(--text-lg);
+    line-height: 1.45;
+    color: var(--muted);
+  }
+</style>
