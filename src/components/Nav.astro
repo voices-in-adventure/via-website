@@ -115,17 +115,24 @@ const links = [
     works on article pages, whose hero photos come from the CMS and had no
     scrim at all.
 
-    Sized 1.6× the masthead so it fades out well below the rule — a gradient
-    that stopped at the rule would leave a hard seam across the photo, which
-    is exactly the tell anti-slop.md warns about.
+    Sized 3× the masthead so it reaches well down the photo — a gradient that
+    stopped at the rule would leave a hard seam, which is exactly the tell
+    anti-slop.md warns about.
 
-    The numbers are measured. Compositing this stack against the 95th-
-    percentile brightest pixel in each text zone, the worst of the eight house
-    photos gives 7.1:1 for the nav links, 7.1:1 for the wordmark, and 5.4:1
-    for the rule. Against a pure white photo — the worst thing an editor could
-    ever upload — it still gives 5.0:1, 5.4:1 and 3.8:1, so every zone clears
-    its gate no matter what goes in the CMS. Re-measure these if the masthead
-    heights in tokens.css change.
+    The stops below the rule trace a raised cosine rather than a straight
+    line: the curve leaves zero at zero slope, so the scrim dissolves into the
+    photo instead of terminating on a visible edge. A linear ramp to
+    transparent still shows its endpoint as a faint band.
+
+    Down through the masthead itself the ramp is unchanged (68% → 60% over the
+    full expanded height), so the measured text contrast still holds.
+    Compositing this stack against the 95th-percentile brightest pixel in each
+    text zone, the worst of the eight house photos gives 7.1:1 for the nav
+    links, 7.1:1 for the wordmark, and 5.4:1 for the rule. Against a pure
+    white photo — the worst thing an editor could ever upload — it still gives
+    5.0:1, 5.4:1 and 3.8:1, so every zone clears its gate no matter what goes
+    in the CMS. Re-measure these if the masthead heights in tokens.css change,
+    or if any stop at or above the 33% mark moves.
 
     It fades out with the collapse because the compact bar is opaque --bg and
     needs no help.
