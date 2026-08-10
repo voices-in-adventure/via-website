@@ -119,10 +119,12 @@ const links = [
     stopped at the rule would leave a hard seam, which is exactly the tell
     anti-slop.md warns about.
 
-    The stops below the rule trace a raised cosine rather than a straight
-    line: the curve leaves zero at zero slope, so the scrim dissolves into the
-    photo instead of terminating on a visible edge. A linear ramp to
-    transparent still shows its endpoint as a faint band.
+    The stops below the rule trace a curve, not a straight line: it leaves
+    zero at zero slope, so the scrim dissolves into the photo instead of
+    terminating on a visible edge. A linear ramp to transparent still shows
+    its endpoint as a faint band. The curve is weighted to shed most of its
+    ink in the first half of the tail — the reach is what the photo wants, the
+    weight is not.
 
     Down through the masthead itself the ramp is unchanged (68% → 60% over the
     full expanded height), so the measured text contrast still holds.
