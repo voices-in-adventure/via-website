@@ -1,0 +1,99 @@
+---
+// The rule-and-label that opens a section: "Dispatches" on the left, an
+// optional action on the right — "Subscribe", "View all products".
+//
+// Every page below the homepage uses it, which is the point. Six sections
+// each inventing their own heading treatment is how a site stops looking
+// like one site.
+//
+// The action is the page's accent spend. anti-slop.md allows two visible
+// accent uses per screen, so a page should carry at most a couple of these
+// and let everything else sit in --fg and --muted.
+import Scribble from './Scribble.astro'
+
+interface Props {
+  title: string
+  /** Optional line under the title, for a section that needs setting up. */
+  note?: string | null
+  actionLabel?: string
+  actionHref?: string | null
+  /** Opens in a new tab and gets a rel. For subscribe forms and other off-site links. */
+  actionExternal?: boolean
+}
+
+const {title, note, actionLabel, actionHref, actionExternal = false} = Astro.props
+---
+
+<div class="section-head">
+  <div class="section-head-main">
+    <h2 class="section-head-title">{title}</h2>
+    {note && <p class="section-head-note">{note}</p>}
+  </div>
+
+  {
+    actionHref && actionLabel && (
+      <a
+        class="section-head-action"
+        href={actionHref}
+        target={actionExternal ? '_blank' : undefined}
+        rel={actionExternal ? 'noopener noreferrer' : undefined}
+        data-scribble
+      >
+        <span class="section-head-action-text">
+          {actionLabel}
+          <Scribble />
+        </span>
+      </a>
+    )
+  }
+</div>
+
+<style>
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-8);
+    margin-bottom: var(--space-8);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--fg);
+  }
+
+  .section-head-main {
+    /* Lets a long note wrap without shoving the action off the row. */
+    min-width: 0;
+  }
+
+  .section-head-title {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: var(--text-xl);
+    font-weight: 500;
+    line-height: 1.2;
+    color: var(--fg);
+  }
+
+  .section-head-note {
+    max-width: var(--measure);
+    margin: var(--space-2) 0 0;
+    font-family: var(--font-serif);
+    font-size: var(--text-base);
+    line-height: 1.5;
+    color: var(--muted);
+  }
+
+  .section-head-action {
+    flex: none;
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    color: var(--accent);
+    background-image: none;
+  }
+
+  .section-head-action-text {
+    position: relative;
+    display: inline-block;
+    --scribble-height: 0.6em;
+    --scribble-drop: -0.15em;
+  }
+</style>
