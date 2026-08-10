@@ -1,0 +1,153 @@
+---
+// Journeys: the two axes, presented as two ways of choosing rather than one
+// list of filters. via-design.md frames them as "places to go" and "reasons
+// to go" — a region and a mood are not the same question, and a reader
+// usually arrives already knowing which one they are asking.
+//
+// Nothing here is curated. Both rows are the tag documents in Sanity, with
+// live counts. Publishing a tagged article is the only action that changes
+// this page — content-model.md: "None of these pages are hand-curated."
+import PageLayout from '../layouts/PageLayout.astro'
+import SectionHead from '../components/SectionHead.astro'
+import TagCard from '../components/TagCard.astro'
+import EmptyState from '../components/EmptyState.astro'
+import {sanityClient} from '../lib/sanity'
+import {placeHref, reasonHref, TAG_COUNT, type PlaceColor} from '../lib/articles'
+
+interface TagRow {
+  title?: string | null
+  slug?: string | null
+  description?: string | null
+  color?: PlaceColor | null
+  count: number
+}
+
+// title is not required() on either tag type, so a half-filled draft can come
+// back with nothing to print. Those are dropped rather than rendered as a
+// blank rectangle.
+const usable = (rows: TagRow[]) => rows.filter((row) => row.title && row.slug)
+
+const [places, reasons] = await Promise.all([
+  sanityClient.fetch<TagRow[]>(
+    `*[_type == "place"] | order(title asc){title, "slug": slug.current, description, color, ${TAG_COUNT}}`,
+  ),
+  sanityClient.fetch<TagRow[]>(
+    `*[_type == "reason"] | order(title asc){title, "slug": slug.current, description, ${TAG_COUNT}}`,
+  ),
+])
+
+const placeRows = usable(places)
+const reasonRows = usable(reasons)
+---
+
+<PageLayout
+  title="Journeys"
+  eyebrow="Two ways in"
+  standfirst="Pick a part of the world, or pick the reason you want to leave. Both lead to the same archive from different directions, and both fill themselves as we publish."
+>
+  <section class="axis axis--places">
+    <div class="axis-inner">
+      <SectionHead
+        title="Places to go"
+        note="Six regions. Every Dispatch and Signal is filed under at least one."
+      />
+
+      {
+        placeRows.length > 0 ? (
+          <div class="grid grid--3">
+            {placeRows.map((place) => (
+              <TagCard
+                href={placeHref(place.slug!)}
+                title={place.title!}
+                description={place.description}
+                count={place.count}
+                color={place.color}
+              />
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            title="Regions are still being set up"
+            body="The six regions live in the CMS and have not been added yet. Once they are, this row fills itself and stays current on its own."
+          />
+        )
+      }
+    </div>
+  </section>
+
+  <section class="axis axis--reasons">
+    <div class="axis-inner">
+      <SectionHead
+        title="Reasons to go"
+        note="The other axis: not where, but why."
+      />
+
+      {
+        reasonRows.length > 0 ? (
+          <div class="grid grid--4">
+            {reasonRows.map((reason) => (
+              <TagCard
+                href={reasonHref(reason.slug!)}
+                title={reason.title!}
+                description={reason.description}
+                count={reason.count}
+              />
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            title="Reasons are still being set up"
+            body="Reasons are written by the editors and added in the CMS. Once they exist, this row fills itself."
+          />
+        )
+      }
+    </div>
+  </section>
+</PageLayout>
+
+<style>
+  .axis-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 var(--gutter);
+  }
+
+  /* Places breathe — six cards, three up, descriptions in full. */
+  .axis--places {
+    padding-bottom: var(--space-24);
+  }
+
+  /* Reasons run tight and sit on the tinted band, so the axes don't twin. */
+  .axis--reasons {
+    padding: var(--space-16) 0 var(--space-24);
+    background: var(--surface);
+  }
+
+  .grid {
+    display: grid;
+    gap: var(--space-12) var(--space-8);
+  }
+
+  .grid--3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .grid--4 {
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-8) var(--space-6);
+  }
+
+  @media (max-width: 1000px) {
+    .grid--3,
+    .grid--4 {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 620px) {
+    .grid--3,
+    .grid--4 {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
