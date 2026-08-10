@@ -6,12 +6,25 @@
  * Placeholder photography lives in this repo rather than being hotlinked
  * from a CDN — see CLAUDE.md. Files already on disk are left alone, so this
  * is safe to re-run.
+ *
+ * Originals off Wikimedia run to 30 MB, which has no business in a git
+ * repository. Each one is capped at 2400px on its long edge after download,
+ * which is larger than any hero the site renders. That uses `sips`, which
+ * ships with macOS — on another platform the resize is skipped and the
+ * full-size file is kept.
  */
 
 import {mkdir, writeFile, stat} from 'node:fs/promises'
 import {dirname, join} from 'node:path'
 import {fileURLToPath} from 'node:url'
+import {execFile} from 'node:child_process'
+import {promisify} from 'node:util'
 import {articles} from './sample-content.mjs'
+
+const run = promisify(execFile)
+
+/** Longest edge, in pixels, we keep a placeholder photo at. */
+const MAX_EDGE = 2400
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
 const outputDir = join(repoRoot, 'imagery', 'articles')
