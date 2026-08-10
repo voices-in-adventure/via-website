@@ -115,6 +115,10 @@ Same shape as `place`, minus `color`.
 A singleton. Homepage hero image or video, mission statement, social links,
 subscribe URLs for Dispatch and Signals.
 
+Two mission fields, deliberately: `missionStatement` is the short line over
+the homepage photo, `aboutMission` is the longer portable-text version at the
+top of About. About falls back to the short one when the long one is empty.
+
 ---
 
 ## Editor experience
