@@ -52,9 +52,18 @@ import {SCRIBBLE_PATHS, SCRIBBLE_VIEWBOX} from '../lib/scribbles'
     pointer-events: none;
   }
 
+  /*
+    The gap is longer than the dash on purpose. `stroke-dasharray: 1` means
+    "1 on, 1 off", which repeats — so with the stroke retracted, the pattern's
+    next dash begins exactly at the end of the path. That dash has nowhere to
+    go and renders as a zero-length segment, which stroke-linecap="round"
+    draws as a dot: a stray blue mark under every link that was never hovered.
+    A gap of 2 puts the next dash past the end of the path, where it can't be
+    drawn at all. The retracted state is then genuinely empty.
+  */
   .scribble path {
     stroke: var(--accent);
-    stroke-dasharray: 1;
+    stroke-dasharray: 1 2;
     stroke-dashoffset: 1;
     transition: stroke-dashoffset 420ms cubic-bezier(0.4, 0, 0.2, 1);
   }
