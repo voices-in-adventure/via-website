@@ -64,6 +64,7 @@ export const CARD_PROJECTION = `
   heroImage,
   publishedAt,
   city,
+  featured,
   author->{name, role}
 `
 
