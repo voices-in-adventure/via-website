@@ -63,8 +63,21 @@ for (const article of articles) {
 
   const bytes = Buffer.from(await response.arrayBuffer())
   await writeFile(destination, bytes)
-  console.log(`  saved ${file} (${(bytes.length / 1024 / 1024).toFixed(1)} MB)`)
+  await shrink(destination)
+
+  const {size} = await stat(destination)
+  console.log(`  saved ${file} (${(size / 1024 / 1024).toFixed(1)} MB)`)
   downloaded += 1
+}
+
+/** Caps the long edge at MAX_EDGE in place. No-op where `sips` isn't available. */
+async function shrink(path) {
+  try {
+    await run('sips', ['--resampleHeightWidthMax', String(MAX_EDGE), path])
+  } catch (error) {
+    if (error.code === 'ENOENT') return // not macOS — keep the original
+    throw error
+  }
 }
 
 console.log(`\n${downloaded} downloaded, ${skipped} already present → imagery/articles/`)
