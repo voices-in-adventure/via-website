@@ -35,6 +35,16 @@ const links = [
   {label: 'Resources', href: '/resources'},
   {label: 'About', href: '/about'},
 ]
+
+/*
+  Which section you are in. startsWith rather than equality so a tag archive
+  at /journeys/places/europe still marks Journeys — a reader who has followed
+  a tag two levels down should still be able to see where they are. None of
+  the four hrefs is a prefix of another, so there is no ambiguity, and the
+  homepage matches nothing.
+*/
+const pathname = Astro.url.pathname
+const isCurrent = (href: string) => pathname === href || pathname.startsWith(`${href}/`)
 ---
 
 <nav class:list={['masthead', hasHero && 'masthead--hero']} id="site-masthead">
@@ -43,7 +53,10 @@ const links = [
     {
       links.map((link) => (
         <li>
-          <a href={link.href} data-scribble>{link.label}<Scribble /></a>
+          <a href={link.href} aria-current={isCurrent(link.href) ? 'page' : undefined} data-scribble>
+            {link.label}
+            <Scribble />
+          </a>
         </li>
       ))
     }
