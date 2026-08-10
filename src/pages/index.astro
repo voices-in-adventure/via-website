@@ -23,12 +23,17 @@ const featured = await sanityClient.fetch<ArticleCardType[]>(
   }`,
 )
 
-// Homepage ticker: distinct cities across published Dispatches — never a
-// hardcoded list. See docs/content-model.md, "Homepage ticker."
+// Homepage ticker: the cities of the three most recent published Dispatches
+// — never a hardcoded list. See docs/content-model.md, "Homepage ticker."
+// Held to three because the ticker is laid out to spread three items across
+// the hero's bottom edge; every Dispatch city at once crowds it and stops
+// reading as a wall of clocks. Fetching more than three and slicing after
+// leaves room for repeated cities to collapse without coming up short.
 const dispatchCities = await sanityClient.fetch<string[]>(
-  `*[_type == "dispatch" && publishedAt <= now() && defined(city) && city != ""].city`,
+  `*[_type == "dispatch" && publishedAt <= now() && defined(city) && city != ""]
+    | order(publishedAt desc)[0...12].city`,
 )
-const tickerCities = [...new Set(dispatchCities)]
+const tickerCities = [...new Set(dispatchCities)].slice(0, 3)
 
 /*
   The hero photo, in order of preference:
