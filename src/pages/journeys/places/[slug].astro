@@ -1,0 +1,60 @@
+---
+// One region's archive. Every published Dispatch and Signal filed under this
+// place, newest first, with the other five regions at the foot.
+//
+// getStaticPaths builds a page for every place document, including ones with
+// nothing filed under them yet. That is deliberate: the tag exists, articles
+// link to it, and a 404 on a region VIA has named would be worse than an
+// archive that says it is waiting for its first story.
+import TagArchiveLayout from '../../../layouts/TagArchiveLayout.astro'
+import {sanityClient} from '../../../lib/sanity'
+import {placeHref, TAGGED_ARTICLES, type ArticleCard, type PlaceColor} from '../../../lib/articles'
+
+interface Place {
+  _id: string
+  title: string
+  slug: string
+  description?: string | null
+  color?: PlaceColor | null
+}
+
+export async function getStaticPaths() {
+  const places = await sanityClient.fetch<Place[]>(
+    `*[_type == "place" && defined(slug.current) && defined(title)] | order(title asc){
+      _id, title, "slug": slug.current, description, color
+    }`,
+  )
+
+  // Every page also needs the full list, to render the row of siblings.
+  return places.map((place) => ({
+    params: {slug: place.slug},
+    props: {place, places},
+  }))
+}
+
+const {place, places} = Astro.props as {place: Place; places: Place[]}
+
+const [articles, settings] = await Promise.all([
+  sanityClient.fetch<ArticleCard[]>(TAGGED_ARTICLES, {id: place._id}),
+  sanityClient.fetch<{pitchUsUrl?: string | null} | null>(
+    `*[_type == "siteSettings"][0]{pitchUsUrl}`,
+  ),
+])
+
+const siblings = places.map((other) => ({
+  href: placeHref(other.slug),
+  label: other.title,
+  color: other.color,
+  current: other._id === place._id,
+}))
+---
+
+<TagArchiveLayout
+  title={place.title}
+  description={place.description}
+  eyebrow="Places to go"
+  siblingsLabel="All regions"
+  articles={articles}
+  siblings={siblings}
+  pitchUrl={settings?.pitchUsUrl}
+/>
