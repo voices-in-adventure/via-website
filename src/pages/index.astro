@@ -2,8 +2,13 @@
 import BaseLayout from '../layouts/BaseLayout.astro'
 import WorldClockTicker from '../components/WorldClockTicker.astro'
 import ArticleCard from '../components/ArticleCard.astro'
+import SectionHead from '../components/SectionHead.astro'
 import {sanityClient, urlFor} from '../lib/sanity'
-import {CARD_PROJECTION, type ArticleCard as ArticleCardType} from '../lib/articles'
+import {
+  FEATURED_ARTICLES,
+  LATEST_ARTICLES,
+  type ArticleCard as ArticleCardType,
+} from '../lib/articles'
 import type {SanityImageSource} from '@sanity/image-url'
 
 interface SiteSettings {
@@ -17,11 +22,28 @@ const siteSettings = await sanityClient.fetch<SiteSettings | null>(
   `*[_type == "siteSettings"][0]{heroType, heroImage, heroVideoUrl, missionStatement}`,
 )
 
-const featured = await sanityClient.fetch<ArticleCardType[]>(
-  `*[_type in ["dispatch", "signal"] && featured == true && publishedAt <= now()] | order(publishedAt desc){
-    ${CARD_PROJECTION}
-  }`,
-)
+/*
+  The front page is built out of two ordered lists and nothing else.
+
+  The editors' picks fill the front block, most recent first: the newest one
+  is the lead, the next two flank it, the four after that become the rail of
+  headlines. That is the whole ranking — there is no second place in Sanity
+  for an editor to say which story is the big one. Publishing order decides
+  it, which is how a newspaper works and one fewer field to keep in sync.
+
+  Everything published then fills the river below, minus whatever the front
+  block already used. That way the bottom of the page keeps showing recent
+  work even in a week when nothing new was featured.
+*/
+const featured = await sanityClient.fetch<ArticleCardType[]>(FEATURED_ARTICLES)
+const latest = await sanityClient.fetch<ArticleCardType[]>(LATEST_ARTICLES)
+
+const lead = featured[0] ?? latest[0] ?? null
+const flank = featured.slice(1, 3)
+const rail = featured.slice(3, 7)
+
+const shown = new Set([lead, ...flank, ...rail].filter(Boolean).map((a) => a!.slug))
+const river = latest.filter((a) => !shown.has(a.slug)).slice(0, 10)
 
 // Homepage ticker: the cities of the three most recent published Dispatches
 // — never a hardcoded list. See docs/content-model.md, "Homepage ticker."
@@ -178,12 +200,61 @@ const HOUSE_HEROES = [
     in front of another rather than as a rendering bug.
   */}
   <div class="scroller">
-    <section class="featured">
-      <h2 class="section-heading">Editor&rsquo;s Picks</h2>
-      <div class="featured-grid">
-        {featured.map((article) => <ArticleCard article={article} />)}
-      </div>
-    </section>
+    {
+      lead && (
+        <section class="front-section">
+          <div class="section-inner">
+            <SectionHead title="Editor's Picks" />
+            <div
+              class:list={[
+                'front',
+                flank.length === 0 && 'front--no-flank',
+                rail.length === 0 && 'front--no-rail',
+              ]}
+            >
+              {flank.length > 0 && (
+                <div class="front-flank">
+                  {flank.map((article) => (
+                    <ArticleCard article={article} kickerAccent={false} />
+                  ))}
+                </div>
+              )}
+
+              <div class="front-lead">
+                <ArticleCard article={lead} variant="lead" />
+              </div>
+
+              {rail.length > 0 && (
+                <div class="front-rail">
+                  {rail.map((article) => (
+                    <ArticleCard article={article} variant="compact" kickerAccent={false} />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )
+    }
+
+    {
+      river.length > 0 && (
+        <section class="river-section">
+          <div class="section-inner">
+            <SectionHead title="Latest" actionLabel="All stories" actionHref="/stories" />
+            <div class="river-grid">
+              {river.map((article, i) => (
+                <ArticleCard
+                  article={article}
+                  variant={i < 2 ? 'wide' : 'compact'}
+                  kickerAccent={false}
+                />
+              ))}
+            </div>
+          </div>
+        </section>
+      )
+    }
 
     <section class="social">
       <div class="social-inner">
@@ -359,22 +430,173 @@ const HOUSE_HEROES = [
     background: var(--bg);
   }
 
-  .featured {
-    padding: var(--space-24) var(--gutter) var(--space-16);
+  /*
+    Both sections sit in the same container every other page on the site
+    uses, so the front page lines up with Stories and Journeys rather than
+    running to the window edge on its own.
+  */
+  .section-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 var(--gutter);
   }
 
-  .section-heading {
-    margin: 0 0 var(--space-8);
-    font-family: var(--font-serif);
-    font-size: var(--text-xl);
-    font-weight: 500;
-    color: var(--fg);
+  .front-section {
+    padding: var(--space-24) 0 var(--space-16);
   }
 
-  .featured-grid {
+  /*
+    The front block. Three columns of deliberately unequal weight — two
+    secondary stories, the lead at half the page, then a rail of headlines —
+    on a twelve-column grid so the proportions are stated as spans rather
+    than guessed at in percentages.
+
+    via-design.md: "Section rhythm alternates density." This is the tight
+    section. The social band at the bottom of the page is the one that
+    breathes.
+  */
+  .front {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: var(--space-8);
+    grid-template-columns: repeat(12, 1fr);
+    column-gap: var(--space-6);
+    row-gap: var(--space-12);
+  }
+
+  .front-flank {
+    grid-column: 1 / span 3;
+    display: grid;
+    align-content: start;
+    gap: var(--space-12);
+  }
+
+  /*
+    Hairlines, not gutters, separate the lead from its neighbours — at this
+    density the whitespace alone stops reading as three columns and starts
+    reading as seven loose cards.
+  */
+  .front-lead {
+    grid-column: 4 / span 6;
+    padding-inline: var(--space-6);
+    border-inline: 1px solid var(--border);
+  }
+
+  .front-rail {
+    grid-column: 10 / span 3;
+    display: grid;
+    align-content: start;
+    gap: var(--space-6);
+  }
+
+  /*
+    A rule between headlines, never above the first one — the section's own
+    rule is already doing that job a few pixels higher.
+  */
+  .front-rail :global(.card + .card) {
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--border);
+  }
+
+  /*
+    With nothing to sit between, the lead takes the empty column's room
+    rather than leaving a hole. Editors unfeature things; the page has to
+    hold its shape when they do.
+  */
+  .front--no-flank .front-lead {
+    grid-column: 1 / span 9;
+    padding-inline-start: 0;
+    border-inline-start: none;
+  }
+
+  .front--no-rail .front-lead {
+    grid-column: 4 / span 9;
+    padding-inline-end: 0;
+    border-inline-end: none;
+  }
+
+  .front--no-flank.front--no-rail .front-lead {
+    grid-column: 1 / -1;
+    padding-inline: 0;
+    border-inline: none;
+  }
+
+  .river-section {
+    padding: 0 0 var(--space-24);
+  }
+
+  /*
+    The river. Two letterbox stories open it, then everything else runs as
+    ruled headlines — the same four columns throughout, so the change in
+    weight comes from the cards and not from the grid moving underneath them.
+  */
+  .river-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    column-gap: var(--space-6);
+    row-gap: var(--space-12);
+  }
+
+  .river-grid > :global(.card--wide) {
+    grid-column: span 2;
+  }
+
+  .river-grid > :global(.card--compact) {
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border);
+  }
+
+  @media (max-width: 1100px) {
+    /*
+      Not enough width for three columns of type. The lead goes over the top
+      at full width and the other two groups stack beneath it, which keeps
+      the reading order the same as the desktop layout's.
+    */
+    .front {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .front-lead {
+      order: -1;
+      grid-column: 1 / -1;
+      padding-inline: 0;
+      border-inline: none;
+    }
+
+    .front-flank,
+    .front-rail {
+      grid-column: 1 / -1;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-8) var(--space-6);
+    }
+
+    /* Side by side, a rule on every headline but the first reads as an
+       error. Rule all of them instead. */
+    .front-rail :global(.card) {
+      padding-top: var(--space-6);
+      border-top: 1px solid var(--border);
+    }
+
+    .river-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  @media (max-width: 900px) {
+    .river-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 620px) {
+    .front,
+    .front-flank,
+    .front-rail,
+    .river-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .river-grid > :global(.card--wide) {
+      grid-column: span 1;
+    }
   }
 
   .social {

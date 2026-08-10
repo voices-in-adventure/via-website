@@ -82,6 +82,27 @@ export const ARTICLE_PROJECTION = `
 `
 
 /**
+ * The editors' picks, newest first. The homepage builds its whole front
+ * block out of this one ordered list — the first item is the lead, the next
+ * few flank it — so the order the editors publish in is the order the page
+ * ranks in, with no second curation step in the code.
+ */
+export const FEATURED_ARTICLES = `
+  *[_type in ["dispatch", "signal"] && featured == true && publishedAt <= now()]
+    | order(publishedAt desc){${CARD_PROJECTION}}
+`
+
+/**
+ * Everything published, newest first. The homepage river runs this and drops
+ * whatever the front block already used, so the bottom of the page keeps
+ * filling with recent work even when little is featured.
+ */
+export const LATEST_ARTICLES = `
+  *[_type in ["dispatch", "signal"] && publishedAt <= now()]
+    | order(publishedAt desc){${CARD_PROJECTION}}
+`
+
+/**
  * Every published article carrying a given tag, newest first. Both Journeys
  * archive types run this with $id bound to the place or reason document —
  * references() matches whichever array the tag sits in, so one query serves

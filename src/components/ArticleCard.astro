@@ -1,44 +1,80 @@
 ---
-// The card used everywhere a Dispatch or Signal is teased — Editor's Picks
-// today, Stories/Journeys/Resources once they exist. Extracted from the
-// homepage so all four places render the same markup instead of drifting
-// apart the first time one of them is edited.
+// The card used everywhere a Dispatch or Signal is teased — the homepage
+// front page, Stories, Journeys, Resources. Extracted from the homepage so
+// all four places render the same markup instead of drifting apart the first
+// time one of them is edited.
+//
+// One component, four sizes. The homepage needs a lead story that reads as
+// unmistakably bigger than everything around it, and a rail of headlines
+// that reads as smaller; four separate card files would be four places to
+// forget to fix a byline.
 import Scribble from './Scribble.astro'
 import {urlFor} from '../lib/sanity'
 import {articleHref, articleKickerParts, formatDate, type ArticleCard} from '../lib/articles'
 
 interface Props {
   article: ArticleCard
+  /**
+   * How much room this card gets.
+   *
+   *   standard  the default everywhere — 4:3 photo, title, dek, byline
+   *   lead      the front page's one big story — 3:2 photo, display title
+   *   wide      a secondary story in a wide slot — 16:9 photo
+   *   compact   a rail headline — small square thumb beside the title, no dek
+   */
+  variant?: 'standard' | 'lead' | 'wide' | 'compact'
+  /**
+   * Whether "Dispatch"/"Signal" takes the accent colour. anti-slop.md allows
+   * two visible accent uses per screen, so a page showing a dozen cards has
+   * to turn this off for all but one of them — see the homepage.
+   */
+  kickerAccent?: boolean
 }
 
-const {article} = Astro.props
+const {article, variant = 'standard', kickerAccent = true} = Astro.props
 
 const kicker = articleKickerParts(article)
+
+// Each slot gets a photo cropped for its own shape and requested at roughly
+// the size it will actually be drawn at. Shipping the lead's 1600px file to
+// an 88px rail thumbnail is the same page weight for none of the detail.
+const CROPS = {
+  standard: {width: 800, height: 600},
+  lead: {width: 1600, height: 1067},
+  wide: {width: 900, height: 450},
+  compact: {width: 240, height: 240},
+} as const
+
+const crop = CROPS[variant]
+
+const mediaSrc = article.heroImage
+  ? urlFor(article.heroImage)
+      .width(crop.width)
+      .height(crop.height)
+      .fit('crop')
+      .quality(80)
+      .url()
+  : null
 ---
 
-<article class="card">
+<article class:list={['card', `card--${variant}`]}>
   <a class="card-link" href={articleHref(article)} data-scribble>
-    {
-      article.heroImage && (
-        <img
-          class="card-media"
-          src={urlFor(article.heroImage).width(800).height(600).fit('crop').quality(80).url()}
-          alt={article.title}
-        />
-      )
-    }
-    <p class="card-kicker">
-      <span class="card-kicker-label">{kicker.label}</span>{kicker.city && ` — ${kicker.city}`}
-    </p>
-    <h3 class="card-title">
-      <span class="card-title-text">{article.title}<Scribble /></span>
-    </h3>
-    <p class="card-dek">{article.dek}</p>
-    <p class="card-byline">
-      {article.author?.name}
-      {article.author?.name ? ' · ' : ''}
-      {formatDate(article.publishedAt)}
-    </p>
+    {mediaSrc && <img class="card-media" src={mediaSrc} alt={article.title} />}
+
+    <div class="card-text">
+      <p class:list={['card-kicker', !kickerAccent && 'card-kicker--quiet']}>
+        <span class="card-kicker-label">{kicker.label}</span>{kicker.city && ` — ${kicker.city}`}
+      </p>
+      <h3 class="card-title">
+        <span class="card-title-text">{article.title}<Scribble /></span>
+      </h3>
+      {variant !== 'compact' && <p class="card-dek">{article.dek}</p>}
+      <p class="card-byline">
+        {article.author?.name}
+        {article.author?.name ? ' · ' : ''}
+        {formatDate(article.publishedAt)}
+      </p>
+    </div>
   </a>
 </article>
 
@@ -72,6 +108,10 @@ const kicker = articleKickerParts(article)
 
   .card-kicker-label {
     color: var(--accent);
+  }
+
+  .card-kicker--quiet .card-kicker-label {
+    color: var(--muted);
   }
 
   /*
@@ -113,5 +153,100 @@ const kicker = articleKickerParts(article)
     font-family: var(--font-sans);
     font-size: var(--text-xs);
     color: var(--muted);
+  }
+
+  /* ---- lead ------------------------------------------------------------
+     The one story on the page that gets display type. via-design.md: "Display
+     type gets air. Line-height 1.05 at the largest sizes." The dek is held to
+     the reading measure so it never runs the full width of the photo. */
+
+  .card--lead .card-media {
+    aspect-ratio: 3 / 2;
+    margin-bottom: var(--space-6);
+  }
+
+  .card--lead .card-title {
+    margin-bottom: var(--space-4);
+    font-size: var(--text-2xl);
+    line-height: 1.05;
+  }
+
+  /* The stroke is drawn as a fraction of the type size, so at 3rem the
+     defaults land too heavy and too low. Tuned back by eye at this size. */
+  .card--lead .card-title-text {
+    --scribble-height: 0.5em;
+    --scribble-drop: -0.16em;
+  }
+
+  .card--lead .card-dek {
+    max-width: var(--measure);
+    margin-bottom: var(--space-4);
+    font-size: var(--text-lg);
+    line-height: 1.45;
+  }
+
+  /* ---- wide ------------------------------------------------------------
+     A letterbox crop. These sit in a slot two columns wide, so a normal 4:3
+     photo here would stand as tall as the lead's and the page would have two
+     stories claiming to be the biggest. Flattening the crop keeps the width
+     and gives back the height. */
+
+  .card--wide .card-media {
+    aspect-ratio: 2 / 1;
+  }
+
+  /* The slot is wider than anything should be read at. */
+  .card--wide .card-dek {
+    max-width: var(--measure);
+  }
+
+  /* ---- compact ---------------------------------------------------------
+     Headline first, thumbnail second — the reader is scanning titles here,
+     not looking at pictures, so the type takes the left edge and the photo
+     confirms it. Row order is set with `order` rather than by moving the
+     markup, so the image still precedes the text for a screen reader and the
+     card collapses to the same shape at every width. */
+
+  .card--compact .card-link {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: var(--space-4);
+  }
+
+  .card--compact .card-media {
+    order: 2;
+    flex: none;
+    width: 88px;
+    aspect-ratio: 1 / 1;
+    margin-bottom: 0;
+  }
+
+  .card--compact .card-text {
+    order: 1;
+    /* Lets a long headline wrap instead of pushing the thumbnail out. */
+    min-width: 0;
+    flex: 1;
+  }
+
+  .card--compact .card-kicker {
+    margin-bottom: var(--space-1);
+  }
+
+  .card--compact .card-title {
+    margin-bottom: var(--space-2);
+    font-size: var(--text-base);
+    line-height: 1.25;
+  }
+
+  @media (max-width: 1100px) {
+    .card--lead .card-title {
+      font-size: var(--text-xl);
+      line-height: 1.15;
+    }
+
+    .card--lead .card-title-text {
+      --scribble-height: 0.6em;
+      --scribble-drop: -0.22em;
+    }
   }
 </style>
