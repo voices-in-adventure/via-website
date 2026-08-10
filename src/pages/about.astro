@@ -1,0 +1,301 @@
+---
+// About: the mission at length, the people, and the way in.
+//
+// The three sections are deliberately unequal in weight — mission is one
+// column of prose, the team is a wide grid, contribute is a short block.
+// via-design.md: "a page of evenly-spaced equal-weight sections reads as a
+// template."
+import PageLayout from '../layouts/PageLayout.astro'
+import SectionHead from '../components/SectionHead.astro'
+import PortableBody from '../components/PortableBody.astro'
+import EmptyState from '../components/EmptyState.astro'
+import {sanityClient, urlFor} from '../lib/sanity'
+import type {SanityImageSource} from '@sanity/image-url'
+import type {PortableTextBlock} from 'astro-portabletext/types'
+
+interface AboutSettings {
+  missionStatement?: string | null
+  aboutMission?: PortableTextBlock[] | null
+  pitchUsUrl?: string | null
+  feedbackUrl?: string | null
+}
+
+interface TeamMember {
+  name: string
+  role?: string | null
+  bio?: string | null
+  headshot?: SanityImageSource | null
+}
+
+const [settings, team] = await Promise.all([
+  sanityClient.fetch<AboutSettings | null>(
+    `*[_type == "siteSettings"][0]{missionStatement, aboutMission, pitchUsUrl, feedbackUrl}`,
+  ),
+  // Everyone on the masthead, not only everyone with a byline — editors and
+  // photo staff belong on this page whether or not they have filed yet.
+  sanityClient.fetch<TeamMember[]>(
+    `*[_type == "author" && defined(name)] | order(name asc){name, role, bio, headshot}`,
+  ),
+])
+
+// The long mission when the editors have written one, the homepage line when
+// they haven't. Either way the page opens with something they wrote.
+const hasLongMission = (settings?.aboutMission?.length ?? 0) > 0
+
+/** "Ada Okonjo" → "AO". Stands in for a headshot nobody has uploaded yet. */
+function initials(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('')
+}
+---
+
+<PageLayout
+  title="About VIA"
+  eyebrow="Voices in Adventure"
+  standfirst="A travel publication written by students, about the way people actually travel when they are young, broke, and going anyway."
+>
+  <section class="mission">
+    <div class="mission-inner">
+      {
+        hasLongMission ? (
+          <PortableBody value={settings!.aboutMission!} />
+        ) : settings?.missionStatement ? (
+          <p class="mission-fallback">{settings.missionStatement}</p>
+        ) : (
+          <EmptyState
+            title="The mission is being written"
+            body="VIA's editors are drafting this now. It will appear here as soon as it is set in the CMS."
+          />
+        )
+      }
+    </div>
+  </section>
+
+  <section class="team">
+    <div class="team-inner">
+      <SectionHead
+        title="Who makes it"
+        note="Writers, editors, and photographers, spread across as many time zones as the stories."
+      />
+
+      {
+        team.length > 0 ? (
+          <ul class="team-grid">
+            {team.map((member) => (
+              <li class="member">
+                {member.headshot ? (
+                  <img
+                    class="member-photo"
+                    src={urlFor(member.headshot).width(600).height(600).fit('crop').quality(80).url()}
+                    alt={member.name}
+                  />
+                ) : (
+                  /*
+                    A set of initials rather than a generic silhouette. It is
+                    honest about what is missing without printing a grey
+                    placeholder body into the middle of the masthead.
+                  */
+                  <span class="member-photo member-photo--empty" aria-hidden="true">
+                    {initials(member.name)}
+                  </span>
+                )}
+                <p class="member-name">{member.name}</p>
+                {member.role && <p class="member-role">{member.role}</p>}
+                {member.bio && <p class="member-bio">{member.bio}</p>}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <EmptyState
+            title="The masthead is being set up"
+            body="Everyone who writes, edits, or shoots for VIA gets a record in the CMS, and this grid is built from those records. None have been added yet."
+          />
+        )
+      }
+    </div>
+  </section>
+
+  <section class="contribute">
+    <div class="contribute-inner">
+      <h2 class="contribute-heading">Write for us</h2>
+      <p class="contribute-body">
+        VIA runs on people who went somewhere and came back with something to say. You do
+        not need clips, an agent, or a plan — you need a place, a reason you went, and the
+        honesty to write down what it actually cost. Pitch in a paragraph. We read
+        everything.
+      </p>
+
+      {
+        (settings?.pitchUsUrl || settings?.feedbackUrl) && (
+          <ul class="contribute-links">
+            {settings?.pitchUsUrl && (
+              <li>
+                <a class="contribute-link" href={settings.pitchUsUrl}>
+                  Pitch us a story
+                </a>
+              </li>
+            )}
+            {settings?.feedbackUrl && (
+              <li>
+                <a class="contribute-link" href={settings.feedbackUrl}>
+                  Tell us what you think
+                </a>
+              </li>
+            )}
+          </ul>
+        )
+      }
+    </div>
+  </section>
+</PageLayout>
+
+<style>
+  .mission-inner {
+    max-width: var(--measure);
+    margin: 0 auto;
+    padding: 0 var(--gutter);
+  }
+
+  .mission {
+    padding-bottom: var(--space-24);
+  }
+
+  .mission-fallback {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: var(--text-lg);
+    line-height: 1.5;
+    color: var(--fg);
+  }
+
+  .team-inner,
+  .contribute-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 var(--gutter);
+  }
+
+  /* The widest section on the page, and the reason to come to it. */
+  .team {
+    padding: var(--space-16) 0 var(--space-24);
+    background: var(--surface);
+  }
+
+  .team-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-12) var(--space-8);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /*
+    Square crops, not circles. The register here is a masthead in a magazine,
+    not a team page on a SaaS site.
+  */
+  .member-photo {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    margin-bottom: var(--space-4);
+  }
+
+  .member-photo--empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    font-family: var(--font-serif);
+    font-size: var(--text-xl);
+    color: var(--muted);
+  }
+
+  .member-name {
+    margin: 0 0 var(--space-1);
+    font-family: var(--font-serif);
+    font-size: var(--text-lg);
+    font-weight: 500;
+    line-height: 1.25;
+    color: var(--fg);
+  }
+
+  .member-role {
+    margin: 0 0 var(--space-3);
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    color: var(--muted);
+  }
+
+  .member-bio {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: var(--text-sm);
+    line-height: 1.5;
+    color: var(--muted);
+  }
+
+  /* Short, and the last thing on the page — the ask, after the evidence. */
+  .contribute {
+    padding-top: var(--space-24);
+  }
+
+  .contribute-heading {
+    max-width: var(--measure);
+    margin: 0;
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--fg);
+    font-family: var(--font-serif);
+    font-size: var(--text-xl);
+    font-weight: 500;
+    line-height: 1.2;
+    color: var(--fg);
+  }
+
+  .contribute-body {
+    max-width: var(--measure);
+    margin: var(--space-4) 0 var(--space-8);
+    font-family: var(--font-serif);
+    font-size: var(--text-base);
+    line-height: 1.6;
+    color: var(--muted);
+  }
+
+  .contribute-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-8);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .contribute-link {
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    color: var(--accent);
+  }
+
+  @media (max-width: 1100px) {
+    .team-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  @media (max-width: 820px) {
+    .team-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 560px) {
+    .team-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
