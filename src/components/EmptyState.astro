@@ -1,0 +1,87 @@
+---
+// What a tag archive shows when nothing has been filed under it yet.
+//
+// A new publication has more tags than it has stories, so this is the normal
+// early state of half the Journeys pages, not an error. It is written as a
+// composed invitation rather than a blank column: the tag's own description
+// already sits in the page header above, so what belongs here is the ask.
+//
+// The action is dropped when its URL isn't set in Sanity, the same way the
+// footer drops links it has no address for, rather than inventing one.
+import Scribble from './Scribble.astro'
+
+interface Props {
+  title: string
+  body: string
+  actionLabel?: string
+  actionHref?: string | null
+}
+
+const {title, body, actionLabel, actionHref} = Astro.props
+---
+
+<div class="empty">
+  <p class="empty-title">{title}</p>
+  <p class="empty-body">{body}</p>
+  {
+    actionHref && actionLabel && (
+      <p class="empty-action">
+        <a href={actionHref} data-scribble>
+          <span class="empty-action-text">
+            {actionLabel}
+            <Scribble />
+          </span>
+        </a>
+      </p>
+    )
+  }
+</div>
+
+<style>
+  /*
+    A bordered block at the reading measure, left-aligned with everything
+    else on the page. Centering it in the middle of an empty column would
+    make the absence the loudest thing on the screen.
+  */
+  .empty {
+    max-width: var(--measure);
+    padding: var(--space-8);
+    background: var(--surface);
+    border-left: 2px solid var(--fg);
+  }
+
+  .empty-title {
+    margin: 0 0 var(--space-3);
+    font-family: var(--font-serif);
+    font-size: var(--text-lg);
+    font-weight: 500;
+    line-height: 1.3;
+    color: var(--fg);
+  }
+
+  .empty-body {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: var(--text-base);
+    line-height: 1.55;
+    color: var(--muted);
+  }
+
+  .empty-action {
+    margin: var(--space-6) 0 0;
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+  }
+
+  .empty-action a {
+    color: var(--accent);
+    background-image: none;
+  }
+
+  .empty-action-text {
+    position: relative;
+    display: inline-block;
+    --scribble-height: 0.6em;
+    --scribble-drop: -0.15em;
+  }
+</style>
