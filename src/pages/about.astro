@@ -38,6 +38,35 @@ const [settings, team] = await Promise.all([
   ),
 ])
 
+/*
+  A masthead runs by seniority, not alphabetically — opening the page on
+  whoever happens to be called Annie tells a reader nothing about how VIA is
+  organised. Roles are ranked here rather than in Sanity so editors have no
+  extra field to keep in order; anything not listed sorts to the end, and
+  ties break alphabetically, so a new role added in Studio appears at the
+  bottom rather than disappearing.
+*/
+const ROLE_ORDER = [
+  'CEO/Founder',
+  'Chief Operating Officer',
+  'Managing Editor',
+  'Chief of Visibility Strategy',
+  'Chief of Staff/HR',
+  'Senior Editor',
+  'External Manager',
+  'Digital Exposure Manager',
+  'Staff Writer',
+]
+
+function rank(role?: string | null): number {
+  const index = role ? ROLE_ORDER.indexOf(role) : -1
+  return index === -1 ? ROLE_ORDER.length : index
+}
+
+const masthead = [...team].sort(
+  (a, b) => rank(a.role) - rank(b.role) || a.name.localeCompare(b.name),
+)
+
 // The long mission when the editors have written one, the homepage line when
 // they haven't. Either way the page opens with something they wrote.
 const hasLongMission = (settings?.aboutMission?.length ?? 0) > 0
@@ -55,7 +84,6 @@ function initials(name: string): string {
 
 <PageLayout
   title="About VIA"
-  eyebrow="Voices in Adventure"
   standfirst="A travel publication written by students, about the way people actually travel when they are young, broke, and going anyway."
 >
   <section class="mission">
@@ -83,9 +111,9 @@ function initials(name: string): string {
       />
 
       {
-        team.length > 0 ? (
+        masthead.length > 0 ? (
           <ul class="team-grid">
-            {team.map((member) => (
+            {masthead.map((member) => (
               <li class="member">
                 {member.headshot ? (
                   <img
@@ -154,8 +182,13 @@ function initials(name: string): string {
 </PageLayout>
 
 <style>
+  /*
+    The site's container, not a reading column — PortableBody caps itself at
+    --measure with no auto margin, so the prose lands at the page's left edge
+    in line with the title above it and the team grid below.
+  */
   .mission-inner {
-    max-width: var(--measure);
+    max-width: 1400px;
     margin: 0 auto;
     padding: 0 var(--gutter);
   }

@@ -19,6 +19,12 @@ pnpm-debug.log*
 .env.production
 .env.*.local
 
+# Source material from the client. The staff introductions PDF carries real
+# phone numbers, email addresses, and social handles for fourteen people, so
+# none of it belongs in version control. What the site actually uses was
+# copied out into scripts/staff.mjs, biography only.
+content/
+
 # macOS-specific files
 .DS_Store
 

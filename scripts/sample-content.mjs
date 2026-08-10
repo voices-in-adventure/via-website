@@ -9,33 +9,12 @@
  *
  * Tag slugs (`places`, `reasons`) and `author` refer to documents that
  * already exist in the dataset — the seed script resolves them by slug and
- * fails loudly if one is missing rather than creating it.
+ * fails loudly if one is missing rather than creating it. Bylines point at
+ * the real masthead in staff.mjs, so run scripts/seed-staff.mjs first.
  *
  * Photos come from Wikimedia Commons under the license named in `credit`,
  * which is what runs as the article's hero caption.
  */
-
-/** Authors these samples are bylined to, beyond the two already in the dataset. */
-export const authors = [
-  {
-    slug: 'sofia-marchetti',
-    name: 'Sofia Marchetti',
-    role: 'Managing Editor',
-    bio: 'Runs the Dispatch desk. Holds that any itinerary worth printing should survive a delayed train.',
-  },
-  {
-    slug: 'amara-osei',
-    name: 'Amara Osei',
-    role: 'Contributing Writer',
-    bio: 'Studying urban planning. Writes about cities that are easier to walk than to explain.',
-  },
-  {
-    slug: 'theo-alvarado',
-    name: 'Theo Alvarado',
-    role: 'Staff Writer',
-    bio: 'Anthropology major, chronically on a grant. Files from wherever the fieldwork lands.',
-  },
-]
 
 /**
  * The articles. `body` is an array of strings — one paragraph each — except
@@ -54,7 +33,7 @@ export const articles = [
     city: 'Lisbon',
     places: ['europe'],
     reasons: ['bored-for-the-weekend'],
-    author: 'maya-chen',
+    author: 'grace-kim',
     publishedAt: '2026-08-05T09:00:00.000Z',
     featured: true,
     photo: {
@@ -65,7 +44,7 @@ export const articles = [
     body: [
       'The 28 tram is the most photographed thing in this city and the least useful. It costs three euros fifty to board, it is full before it reaches you, and every stop on its route is walkable from another stop on its route. Skip it. The city it climbs through is free.',
       ['h2', 'Saturday'],
-      'Start at Miradouro da Senhora do Monte, the highest of the viewpoints and the only one that is ever empty. Come down through Graça on foot — not the stairs the map suggests, but the long way along Rua da Voz do Operário, where the tiled facades have not been restored and are better for it. By the time you reach Alfama you will have passed four more viewpoints, none of which charge admission.',
+      'Start at Miradouro da Senhora do Monte, the highest of the viewpoints and the only one that is ever empty. Come down through Graça on foot, not by the stairs the map suggests but the long way along Rua da Voz do Operário, where the tiled facades have not been restored and are better for it. By the time you reach Alfama you will have passed four more viewpoints, none of which charge admission.',
       'Lunch is wherever has a handwritten menu and no English on it. Expect to pay eight euros for more food than you want. Afternoon belongs to the ferry: Cais do Sodré to Cacilhas, about a euro and a half, twenty minutes, and the best view of Lisbon available at any price. Most people photograph the city from a hill. The water is where it actually resolves.',
       ['h2', 'Sunday'],
       'Feira da Ladra runs Tuesday and Saturday, so Sunday is for the Gulbenkian, free after two if you have a student card and worth the walk through Avenidas Novas regardless. End at Miradouro de Santa Catarina at dusk with something from the kiosk. You will have covered most of the city, spent under twenty euros, and never once queued for the tram.',
@@ -80,7 +59,7 @@ export const articles = [
     city: 'Mexico City',
     places: ['americas'],
     reasons: ['for-the-plot'],
-    author: 'theo-alvarado',
+    author: 'jordan-lubis',
     publishedAt: '2026-07-28T09:00:00.000Z',
     featured: true,
     photo: {
@@ -90,7 +69,7 @@ export const articles = [
     },
     body: [
       'The exchange students arrive at eight and find the taquería closed. They conclude the reviews were wrong and go somewhere with a host stand. This is how you can tell how long someone has been here.',
-      'The stands on Avenida Álvaro Obregón do not open until the trompo is worth lighting, which is when there are enough people out to finish one. That is ten, sometimes later. Before then the neighborhood is doing something else — the cantinas are half full, someone is setting up, and the whole colonia has the feeling of a room being turned over between sittings.',
+      'The stands on Avenida Álvaro Obregón do not open until the trompo is worth lighting, which is when there are enough people out to finish one. That is ten, sometimes later. Before then the neighborhood is doing something else. The cantinas are half full, someone is setting up, and the whole colonia has the feeling of a room being turned over between sittings.',
       'What nobody explains to a semester program is that the schedule is not a quirk to be accommodated. It is the actual structure of the evening, and a curfew of eleven does not shorten your night out so much as delete it. The students who figure this out stop treating dinner as the thing you do before going out, and start treating it as the thing you do once you are already there.',
     ],
   },
@@ -104,7 +83,7 @@ export const articles = [
     city: 'Marrakech',
     places: ['africa'],
     reasons: ['table-for-one'],
-    author: 'amara-osei',
+    author: 'bella-villarin',
     publishedAt: '2026-07-14T09:00:00.000Z',
     featured: false,
     photo: {
@@ -117,7 +96,7 @@ export const articles = [
       ['h2', 'Morning'],
       'Be in the souks by eight, before the tour groups come through Bab Agnaou. Two hours of that is enough. The Saadian Tombs and the Bahia Palace both open at nine and both empty out by eleven if you go straight there. Buy nothing before noon; the first price of the day is a formality.',
       ['h2', 'Afternoon and after'],
-      'Lunch alone is easiest at a rooftop — not for the view but because a table for one on a roof is unremarkable, whereas a table for one at street level invites conversation you may not want. Jemaa el-Fnaa is worth an hour at dusk and no more. For dinner, the food stalls are fine and cheap, but the ones with laminated photographs are for you and the ones with a crowd of men eating standing up are for everyone else. Choose accordingly.',
+      'Lunch alone is easiest at a rooftop, not for the view but because a table for one on a roof is unremarkable, whereas a table for one at street level invites conversation you may not want. Jemaa el-Fnaa is worth an hour at dusk and no more. For dinner, the food stalls are fine and cheap, but the ones with laminated photographs are for you and the ones with a crowd of men eating standing up are for everyone else. Choose accordingly.',
     ],
   },
   {
@@ -130,7 +109,7 @@ export const articles = [
     city: 'Osaka',
     places: ['asia'],
     reasons: ['stipend-just-dropped'],
-    author: 'sofia-marchetti',
+    author: 'syrah-anand',
     publishedAt: '2026-07-08T09:00:00.000Z',
     featured: true,
     photo: {
@@ -141,7 +120,7 @@ export const articles = [
     body: [
       'Osaka is the city where a research stipend goes furthest and disappears fastest, and the difference between those two outcomes is entirely a matter of where you eat standing up.',
       ['h2', 'Day one'],
-      'Land, drop your bag, and go straight to a kaiten-zushi counter for lunch — not the famous one, the one nearest wherever you are staying, which will be better and half the price. Spend the afternoon in Shinsekai, which is louder and less curated than Dotonbori and where kushikatsu runs about a hundred and thirty yen a skewer. The rule about not double-dipping the sauce is real and enforced socially.',
+      'Land, drop your bag, and go straight to a kaiten-zushi counter for lunch. Not the famous one: the one nearest wherever you are staying, which will be better and half the price. Spend the afternoon in Shinsekai, which is louder and less curated than Dotonbori and where kushikatsu runs about a hundred and thirty yen a skewer. The rule about not double-dipping the sauce is real and enforced socially.',
       ['h2', 'Day two'],
       'Nakazakichō in the morning for the coffee shops in converted row houses, then the Umeda Sky Building only if the weather is clear. Evening in a standing bar in Tenma, where the entire district is walkable and nothing has a cover charge. This is the night you will spend the least and remember the most.',
       ['h2', 'Day three'],
@@ -157,7 +136,7 @@ export const articles = [
     city: 'Sydney',
     places: ['oceania'],
     reasons: ['for-the-plot'],
-    author: 'theo-alvarado',
+    author: 'hawley-dick',
     publishedAt: '2026-06-30T09:00:00.000Z',
     featured: false,
     photo: {
@@ -180,7 +159,7 @@ export const articles = [
     city: 'Amman',
     places: ['middle-east'],
     reasons: ['table-for-one'],
-    author: 'amara-osei',
+    author: 'justin-liu',
     publishedAt: '2026-06-11T09:00:00.000Z',
     featured: true,
     photo: {
@@ -189,7 +168,7 @@ export const articles = [
       credit: 'Photo: Diego Delso / Wikimedia Commons (CC BY-SA 3.0)',
     },
     body: [
-      'The program sold itself on immersion, by which it meant four hours of grammar a day and a homestay. What it did not account for is that immersion is mostly waiting — for the conversation to slow down, for the word to arrive, for someone to decide you are worth the effort of being understood.',
+      'The program sold itself on immersion, by which it meant four hours of grammar a day and a homestay. What it did not account for is that immersion is mostly waiting: for the conversation to slow down, for the word to arrive, for someone to decide you are worth the effort of being understood.',
       'So I went to the same café every afternoon for six weeks and did nothing. I ordered the same thing badly, then adequately, then without thinking about it. The staff stopped switching to English somewhere around week three, which was the single largest jump in my Arabic and had nothing to do with the classroom.',
       'I have since been told this is a known thing, that language happens in the dead time and not in the drill. Nobody said so at the time. What they said was that I should get out more, see Jerash, do the Dead Sea. I did those too. They were fine. They are not what I think about.',
     ],
@@ -203,7 +182,7 @@ export const articles = [
     city: 'Cape Town',
     places: ['africa'],
     reasons: ['for-the-plot'],
-    author: 'maya-chen',
+    author: 'grace-kim',
     publishedAt: '2026-05-21T09:00:00.000Z',
     featured: false,
     photo: {
@@ -227,7 +206,7 @@ export const articles = [
     city: 'Buenos Aires',
     places: ['americas'],
     reasons: ['stipend-just-dropped'],
-    author: 'sofia-marchetti',
+    author: 'bella-villarin',
     publishedAt: '2026-05-06T09:00:00.000Z',
     featured: false,
     photo: {
@@ -238,7 +217,7 @@ export const articles = [
     body: [
       'Any price printed in this guide will be wrong by the time you read it. That is not sloppiness, it is the exchange rate, and the correct response is to plan around categories rather than numbers: which meals are cheap in relative terms, which are not, and which are worth it either way.',
       ['h2', 'Friday evening to Saturday'],
-      'Arrive and do nothing ambitious. San Telmo on a Friday night costs almost nothing and gives you the register of the city. Saturday morning is Recoleta and the cemetery, which is free and takes longer than you think, then the Ateneo Grand Splendid because everyone goes and it earns it. Lunch at a parrilla is the meal to spend on — it is still cheaper than the equivalent anywhere in North America, and the difference in quality is not close.',
+      'Arrive and do nothing ambitious. San Telmo on a Friday night costs almost nothing and gives you the register of the city. Saturday morning is Recoleta and the cemetery, which is free and takes longer than you think, then the Ateneo Grand Splendid because everyone goes and it earns it. Lunch at a parrilla is the meal to spend on. It is still cheaper than the equivalent anywhere in North America, and the difference in quality is not close.',
       ['h2', 'Sunday'],
       'The San Telmo market fills eleven blocks and you will not get through it. Go early, buy the leather thing you are going to buy, and be at La Boca by two. Caminito is a tourist set piece and worth exactly forty-five minutes. The last of the money goes on dinner, late, somewhere in Palermo, at an hour that will feel wrong for about two days and then stop feeling wrong at all.',
     ],
@@ -252,7 +231,7 @@ export const articles = [
     city: 'Seoul',
     places: ['asia'],
     reasons: ['bored-for-the-weekend'],
-    author: 'theo-alvarado',
+    author: 'jordan-lubis',
     publishedAt: '2026-04-23T09:00:00.000Z',
     featured: true,
     photo: {
@@ -262,7 +241,7 @@ export const articles = [
     },
     body: [
       'The metro stops running around midnight, which sounds like the end of the evening and is actually the beginning of a different one. Everything a visitor needs between one and five in the morning is open, staffed, and busy, and the city has arranged itself around the assumption that you might not go home.',
-      'The 24-hour café is the load-bearing institution here. Not a bar — a café, with fluorescent lighting and students doing coursework at three in the morning, where nobody will ask why you are there. The jjimjilbang does the same job with a floor to sleep on and costs less than a hostel bed. Between them you can hold a weekend open indefinitely.',
+      'The 24-hour café is the load-bearing institution here. Not a bar: a café, with fluorescent lighting and students doing coursework at three in the morning, where nobody will ask why you are there. The jjimjilbang does the same job with a floor to sleep on and costs less than a hostel bed. Between them you can hold a weekend open indefinitely.',
       'What this does to a two-day trip is hard to overstate. You are not choosing between the night market and a night of sleep, because the night market runs late and the sleep is optional and cheap to defer. Most people leave Seoul convinced they were there longer than they were.',
     ],
   },
@@ -277,7 +256,7 @@ export const articles = [
       'Immigration New Zealand confirmed on August 4 that the US working holiday scheme reopens for the 2026–27 season with 2,000 additional places.',
     places: ['oceania'],
     reasons: ['stipend-just-dropped'],
-    author: 'jordan-ruiz',
+    author: 'zoe-curtis',
     publishedAt: '2026-08-07T09:00:00.000Z',
     informationAsOf: '2026-08-06',
     featured: false,
@@ -287,7 +266,7 @@ export const articles = [
       credit: 'Photo: Σ64 / Wikimedia Commons (CC BY 4.0)',
     },
     body: [
-      'The scheme allows twelve months of work and travel for applicants aged 18 to 30, and the places have gone in under a fortnight in each of the last three seasons. The cap is national, not rolling, so an application filed in October is competing against nothing — because there will be nothing left.',
+      'The scheme allows twelve months of work and travel for applicants aged 18 to 30, and the places have gone in under a fortnight in each of the last three seasons. The cap is national, not rolling, so an application filed in October is competing against nothing, because there will be nothing left.',
       'Two requirements catch students out. The first is proof of roughly NZ$4,200 in available funds, which must be in the applicant’s own account. The second is onward travel or the funds to buy it, assessed separately. Neither is waived for anyone currently enrolled.',
     ],
   },
@@ -300,7 +279,7 @@ export const articles = [
       'The Jordan Tourism Board extended its two-night waiver through the end of the 2026 season in an announcement on July 30.',
     places: ['middle-east'],
     reasons: ['for-the-plot'],
-    author: 'jordan-ruiz',
+    author: 'annie-wion',
     publishedAt: '2026-08-02T09:00:00.000Z',
     informationAsOf: '2026-08-01',
     featured: true,
@@ -322,7 +301,7 @@ export const articles = [
     newsPeg: 'JR Group published new nationwide pass rates on July 15, effective October 1.',
     places: ['asia'],
     reasons: ['stipend-just-dropped'],
-    author: 'jordan-ruiz',
+    author: 'zoe-curtis',
     publishedAt: '2026-07-19T09:00:00.000Z',
     informationAsOf: '2026-07-18',
     featured: false,
@@ -333,7 +312,7 @@ export const articles = [
     },
     body: [
       'The nationwide pass has now risen twice in three years, and the break-even point has moved with it. A Tokyo–Kyoto–Osaka trip, which used to be the standard case for buying one, no longer clears the cost on its own. A round trip that reaches Hiroshima or Kanazawa still does.',
-      'The regional passes were not raised by the same margin and are worth pricing separately — the Kansai and JR East versions in particular. Point-to-point tickets bought through a station machine remain cheaper than either for anyone staying in one place.',
+      'The regional passes were not raised by the same margin and are worth pricing separately, the Kansai and JR East versions in particular. Point-to-point tickets bought through a station machine remain cheaper than either for anyone staying in one place.',
     ],
   },
   {
@@ -345,7 +324,7 @@ export const articles = [
       'Kenya’s Ministry of Interior announced the student exemption on June 24, effective immediately.',
     places: ['africa'],
     reasons: ['for-the-plot'],
-    author: 'amara-osei',
+    author: 'eli-zainea',
     publishedAt: '2026-06-28T09:00:00.000Z',
     informationAsOf: '2026-06-27',
     featured: false,
@@ -367,7 +346,7 @@ export const articles = [
     newsPeg: 'Amtrak reinstated its student fare tier on May 12 after a two-year pause.',
     places: ['americas'],
     reasons: ['bored-for-the-weekend'],
-    author: 'jordan-ruiz',
+    author: 'annie-wion',
     publishedAt: '2026-05-16T09:00:00.000Z',
     informationAsOf: '2026-05-15',
     featured: false,
@@ -378,7 +357,7 @@ export const articles = [
     },
     body: [
       'The discount requires a verified student account and applies to Coach fares only, which excludes Acela and every business-class upgrade. Fifteen percent off a Northeast Regional fare between Boston and New York is real money, but only on the trains nobody is fighting over.',
-      'The blackouts are the catch. Friday afternoons, Sunday evenings, and the fortnights around Thanksgiving and the winter holidays are all excluded — which is to say, the discount is unavailable on precisely the departures students use it for. Booking midweek is the only way to see the full reduction.',
+      'The blackouts are the catch. Friday afternoons, Sunday evenings, and the fortnights around Thanksgiving and the winter holidays are all excluded, which is to say the discount is unavailable on precisely the departures students use it for. Booking midweek is the only way to see the full reduction.',
     ],
   },
 ]

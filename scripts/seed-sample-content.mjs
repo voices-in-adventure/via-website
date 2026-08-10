@@ -21,7 +21,7 @@ import {homedir} from 'node:os'
 import {fileURLToPath} from 'node:url'
 import {randomBytes} from 'node:crypto'
 import {createClient} from '@sanity/client'
-import {articles, authors} from './sample-content.mjs'
+import {articles} from './sample-content.mjs'
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
 const photoDir = join(repoRoot, 'imagery', 'articles')
@@ -112,24 +112,14 @@ async function uploadPhoto(filename) {
   return asset._id
 }
 
-// ── Authors ───────────────────────────────────────────────────────────────
-
-console.log(`Seeding into ${projectId}/${dataset}\n`)
-console.log('Authors')
-
-for (const author of authors) {
-  await client.createOrReplace({
-    _id: `sample-author-${author.slug}`,
-    _type: 'author',
-    name: author.name,
-    slug: {_type: 'slug', current: author.slug},
-    role: author.role,
-    bio: author.bio,
-  })
-  console.log(`  ${author.name} — ${author.role}`)
-}
-
 // ── Articles ──────────────────────────────────────────────────────────────
+
+/*
+  No authors are created here. Bylines point at the real masthead, which
+  scripts/seed-staff.mjs writes; if that has not been run, reference() below
+  fails by name on the first article rather than quietly inventing a person.
+*/
+console.log(`Seeding into ${projectId}/${dataset}`)
 
 const places = await idsBySlug('place')
 const reasons = await idsBySlug('reason')
@@ -183,6 +173,6 @@ for (const article of articles) {
 
 const dispatches = articles.filter((a) => a.type === 'dispatch').length
 console.log(
-  `\n${authors.length} authors, ${assetIds.size} photos, ` +
+  `\n${assetIds.size} photos, ` +
     `${dispatches} dispatches and ${articles.length - dispatches} signals written.`,
 )

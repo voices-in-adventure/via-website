@@ -49,8 +49,16 @@ const {title, eyebrow, standfirst, description} = Astro.props
     padding-bottom: var(--space-32);
   }
 
+  /*
+    The head sits in the same container as the sections below it, not in a
+    reading column of its own. A --measure block centred in the window puts
+    the title several hundred pixels inboard of the content it introduces,
+    which reads as a centred page even though the text is left-aligned. The
+    cap moves onto the type instead, so the title still breaks at a sane
+    width but starts at the page's left edge.
+  */
   .page-head {
-    max-width: var(--measure);
+    max-width: 1400px;
     margin: 0 auto var(--space-16);
     padding: 0 var(--gutter);
   }
@@ -68,6 +76,7 @@ const {title, eyebrow, standfirst, description} = Astro.props
     sizes, with generous margin.
   */
   .page-title {
+    max-width: var(--measure);
     margin: 0;
     font-family: var(--font-serif);
     font-size: var(--text-2xl);
@@ -78,6 +87,7 @@ const {title, eyebrow, standfirst, description} = Astro.props
   }
 
   .page-standfirst {
+    max-width: var(--measure);
     margin: var(--space-6) 0 0;
     font-family: var(--font-serif);
     font-size: var(--text-lg);

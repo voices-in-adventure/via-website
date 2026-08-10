@@ -60,7 +60,13 @@ const asOfFormatter = new Intl.DateTimeFormat('en-US', {
   <article class="article">
     <figure class="article-hero">
       <img src={heroUrl} alt={article.title} />
-      {article.heroCaption && <figcaption>{article.heroCaption}</figcaption>}
+      {
+        article.heroCaption && (
+          <figcaption>
+            <span>{article.heroCaption}</span>
+          </figcaption>
+        )
+      }
     </figure>
 
     <header class="article-head">
@@ -140,10 +146,25 @@ const asOfFormatter = new Intl.DateTimeFormat('en-US', {
     object-fit: cover;
   }
 
+  /*
+    The caption's column has to be measured in the same font as the article's,
+    or it will not line up with the title below it. --measure is 68ch, and ch
+    is the width of a "0" in whatever font the element itself is set in — so
+    a figcaption carrying the small sans face computes a visibly narrower
+    column than the serif article column, and centring that narrower column
+    pushes the caption inboard of the headline.
+
+    The width therefore stays on the figcaption, which inherits the body
+    serif, and the caption's own type sits on the span inside it.
+  */
   .article-hero figcaption {
     max-width: var(--measure);
     margin: var(--space-3) auto 0;
     padding: 0 var(--gutter);
+  }
+
+  .article-hero figcaption span {
+    display: block;
     font-family: var(--font-sans);
     font-size: var(--text-sm);
     line-height: 1.5;
