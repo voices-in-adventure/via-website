@@ -41,7 +41,7 @@ const total = products.length === 1 ? '1 product' : `${products.length} products
               <SectionHead title={group.label} />
               <div class="group-grid">
                 {group.products.map((product) => (
-                  <ProductCard product={product} showArticles />
+                  <ProductCard product={product} showArticles showCategory={false} />
                 ))}
               </div>
             </section>
