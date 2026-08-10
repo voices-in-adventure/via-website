@@ -266,6 +266,8 @@ const asOfFormatter = new Intl.DateTimeFormat('en-US', {
     color: var(--muted);
   }
 
+  /* The rectangle itself lives in components/TagLink.astro — it is shared
+     with the Journeys archives, which put the same tags at their foot. */
   .tags {
     display: flex;
     flex-wrap: wrap;
@@ -273,15 +275,5 @@ const asOfFormatter = new Intl.DateTimeFormat('en-US', {
     margin: 0;
     padding: 0;
     list-style: none;
-  }
-
-  /* Rectangles with the standard radius. Nothing is pill-shaped. */
-  .tag {
-    padding: var(--space-1) var(--space-3);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    font-family: var(--font-sans);
-    font-size: var(--text-xs);
-    color: var(--muted);
   }
 </style>
