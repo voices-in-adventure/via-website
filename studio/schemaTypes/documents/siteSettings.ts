@@ -58,7 +58,15 @@ export const siteSettings = defineType({
       type: 'text',
       group: 'mission',
       rows: 4,
-      description: 'The statement that runs over the homepage hero.',
+      description: 'The statement that runs over the homepage hero. Keep it to a sentence or two.',
+    }),
+    defineField({
+      name: 'aboutMission',
+      title: 'Extended mission',
+      type: 'blockContent',
+      group: 'mission',
+      description:
+        'The longer mission, shown at the top of the About page. The short statement above is what appears over the homepage photo. If you leave this empty, About falls back to that short statement.',
     }),
     defineField({
       name: 'socialLinks',
