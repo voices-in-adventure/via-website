@@ -258,6 +258,20 @@ const isCurrent = (href: string) => pathname === href || pathname.startsWith(`${
     /* This link's underline is the scribble, not the site-wide fallback. */
     background-image: none;
   }
+
+  /*
+    The section you are in keeps a rule under it. It borrows the site-wide
+    underline rather than a border so it sits where the scribble sits, and it
+    is drawn in currentColor — which means it follows the links from white
+    over hero photography to near-black on the solid bar without a second
+    rule for each state.
+  */
+  .masthead-links a[aria-current='page'] {
+    background-image: linear-gradient(currentColor, currentColor);
+    background-repeat: no-repeat;
+    background-position: 0 100%;
+    background-size: 100% 1px;
+  }
 </style>
 
 <script>
