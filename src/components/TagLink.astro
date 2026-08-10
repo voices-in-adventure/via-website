@@ -1,0 +1,104 @@
+---
+// A place or reason as a clickable rectangle: on an article page under
+// "Filed under", and in the sibling row at the foot of every tag archive.
+//
+// Rectangles at the standard radius, never pills — via-design.md is explicit
+// that nothing on this site is capsule-shaped.
+//
+// Places carry their region color as a left edge; reasons have no color and
+// get none. The color is an identifier, not decoration: the region name is
+// always spelled out beside it, so the color never carries meaning on its
+// own. The six values live in tokens.css and are selected here by the slug
+// Sanity stores on place.color — no hex enters this file.
+interface Props {
+  href: string
+  label: string
+  /** A place's region color slug. Omitted for reasons. */
+  color?: string | null
+  /** Marks the tag you are already looking at, in a row of siblings. */
+  current?: boolean
+}
+
+const {href, label, color, current = false} = Astro.props
+---
+
+<a
+  class="tag-link"
+  class:list={[color && 'tag-link--colored', current && 'tag-link--current']}
+  href={href}
+  data-color={color ?? undefined}
+  aria-current={current ? 'page' : undefined}
+>
+  {label}
+</a>
+
+<style>
+  .tag-link {
+    display: inline-block;
+    padding: var(--space-1) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    line-height: 1.6;
+    color: var(--muted);
+    /* Cancels the site-wide sliding underline — the border is the affordance here. */
+    background-image: none;
+    transition:
+      border-color 180ms ease,
+      color 180ms ease;
+  }
+
+  /*
+    Hover darkens the rectangle rather than lifting or filling it. anti-slop.md
+    rules out hover-lift and glow, and a filled tag would read as a button.
+  */
+  .tag-link:hover,
+  .tag-link:focus-visible {
+    border-color: var(--fg);
+    color: var(--fg);
+  }
+
+  .tag-link--current {
+    border-color: var(--fg);
+    color: var(--fg);
+  }
+
+  .tag-link--colored {
+    border-left-width: 3px;
+    border-left-color: var(--tag-color);
+    padding-left: calc(var(--space-3) - 2px);
+  }
+
+  /* The colored edge survives hover — it identifies the region, not a state. */
+  .tag-link--colored:hover,
+  .tag-link--colored:focus-visible,
+  .tag-link--colored.tag-link--current {
+    border-left-color: var(--tag-color);
+  }
+
+  [data-color='europe'] {
+    --tag-color: var(--tag-europe);
+  }
+  [data-color='asia'] {
+    --tag-color: var(--tag-asia);
+  }
+  [data-color='americas'] {
+    --tag-color: var(--tag-americas);
+  }
+  [data-color='africa'] {
+    --tag-color: var(--tag-africa);
+  }
+  [data-color='oceania'] {
+    --tag-color: var(--tag-oceania);
+  }
+  [data-color='mideast'] {
+    --tag-color: var(--tag-mideast);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tag-link {
+      transition: none;
+    }
+  }
+</style>
