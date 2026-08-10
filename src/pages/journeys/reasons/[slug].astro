@@ -1,0 +1,53 @@
+---
+// One reason's archive. Same shape as the region archive — see
+// layouts/TagArchiveLayout.astro — with no region color, because a reason
+// isn't a place and doesn't belong to the six-color system.
+import TagArchiveLayout from '../../../layouts/TagArchiveLayout.astro'
+import {sanityClient} from '../../../lib/sanity'
+import {reasonHref, TAGGED_ARTICLES, type ArticleCard} from '../../../lib/articles'
+
+interface Reason {
+  _id: string
+  title: string
+  slug: string
+  description?: string | null
+}
+
+export async function getStaticPaths() {
+  const reasons = await sanityClient.fetch<Reason[]>(
+    `*[_type == "reason" && defined(slug.current) && defined(title)] | order(title asc){
+      _id, title, "slug": slug.current, description
+    }`,
+  )
+
+  return reasons.map((reason) => ({
+    params: {slug: reason.slug},
+    props: {reason, reasons},
+  }))
+}
+
+const {reason, reasons} = Astro.props as {reason: Reason; reasons: Reason[]}
+
+const [articles, settings] = await Promise.all([
+  sanityClient.fetch<ArticleCard[]>(TAGGED_ARTICLES, {id: reason._id}),
+  sanityClient.fetch<{pitchUsUrl?: string | null} | null>(
+    `*[_type == "siteSettings"][0]{pitchUsUrl}`,
+  ),
+])
+
+const siblings = reasons.map((other) => ({
+  href: reasonHref(other.slug),
+  label: other.title,
+  current: other._id === reason._id,
+}))
+---
+
+<TagArchiveLayout
+  title={reason.title}
+  description={reason.description}
+  eyebrow="Reasons to go"
+  siblingsLabel="All reasons"
+  articles={articles}
+  siblings={siblings}
+  pitchUrl={settings?.pitchUsUrl}
+/>
