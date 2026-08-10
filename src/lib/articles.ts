@@ -13,6 +13,20 @@ export interface ArticleAuthor {
   role?: string | null
 }
 
+/** The six region colors an editor can pick on a Place. */
+export type PlaceColor = 'europe' | 'asia' | 'americas' | 'africa' | 'oceania' | 'mideast'
+
+/**
+ * A tag as an article page renders it. `title` is not required() in the
+ * schema, so it can genuinely be missing — callers filter those out rather
+ * than printing an empty rectangle.
+ */
+export interface ArticleTag {
+  title?: string | null
+  slug?: string | null
+  color?: PlaceColor | null
+}
+
 /** What a card needs. Deliberately smaller than the full article. */
 export interface ArticleCard {
   _type: 'dispatch' | 'signal'
