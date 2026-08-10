@@ -107,6 +107,19 @@ export function articleHref(article: {_type: string; slug: string}): string {
   return article._type === 'signal' ? `/signals/${article.slug}` : `/dispatches/${article.slug}`
 }
 
+/**
+ * Where a tag archive lives. The two axes get separate prefixes because
+ * Journeys presents them as two separate ways of choosing — a place and a
+ * reason are not interchangeable, and the URL should say which you picked.
+ */
+export function placeHref(slug: string): string {
+  return `/journeys/places/${slug}`
+}
+
+export function reasonHref(slug: string): string {
+  return `/journeys/reasons/${slug}`
+}
+
 /** "Dispatch — Berlin" / "Signal". The small line above a card or article title. */
 export function articleKicker(article: {_type: string; city?: string | null}): string {
   const label = article._type === 'signal' ? 'Signal' : 'Dispatch'
