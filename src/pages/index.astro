@@ -285,12 +285,17 @@ const HOUSE_HEROES = [
   }
 
   /*
-    The scrim is measured, not guessed — sampled the 95th-percentile
+    Two layers: a bottom gradient carrying the mission and ticker type, and a
+    flat wash over the whole photo that just settles it down. Every value
+    derives from --fg via color-mix, so no new color enters the codebase and a
+    palette change still propagates from tokens.css.
+
+    The bottom gradient's stops are measured — sampled the 95th-percentile
     brightest pixel in each text zone, across all eight house photos, run
     through the actual gradient math to get real post-scrim WCAG contrast
-    against --bg. Every value derives from --fg via color-mix, so no new
-    color enters the codebase and a palette change still propagates from
-    tokens.css.
+    against --bg. The flat wash is not; it has since been thinned by eye at
+    the owner's direction, which lifts both zones somewhat off the numbers
+    below.
 
     There used to be a third gradient here darkening the top of the hero for
     the nav. It has moved into Nav.astro, because the masthead now needs a
