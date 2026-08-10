@@ -37,6 +37,8 @@ export interface ArticleCard {
   publishedAt: string
   city?: string | null
   author: ArticleAuthor | null
+  /** The editors' toggle. Drives the homepage picks and the top of each Stories stream. */
+  featured?: boolean | null
 }
 
 /** What the article page needs. */
