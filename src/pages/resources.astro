@@ -1,0 +1,185 @@
+---
+// Resources: the things mentioned inside stories, pulled out and gathered.
+//
+// via-design.md scopes this section wider than products — maps, emergency
+// information, checklists — but products are the only strand the content
+// model supports today. The rest are named at the foot as what is coming
+// rather than built as empty links. anti-slop.md rules out visible
+// placeholder furniture; naming an unbuilt section honestly is not that.
+import PageLayout from '../layouts/PageLayout.astro'
+import SectionHead from '../components/SectionHead.astro'
+import ProductCard from '../components/ProductCard.astro'
+import EmptyState from '../components/EmptyState.astro'
+import {sanityClient} from '../lib/sanity'
+import {byMentions, PRODUCTS_QUERY, type Product} from '../lib/products'
+
+const [products, settings] = await Promise.all([
+  sanityClient.fetch<Product[]>(PRODUCTS_QUERY),
+  sanityClient.fetch<{pitchUsUrl?: string | null} | null>(
+    `*[_type == "siteSettings"][0]{pitchUsUrl}`,
+  ),
+])
+
+// Most-written-about first, so the preview is the six things VIA keeps
+// coming back to rather than the six that happen to sort first.
+const preview = [...products].sort(byMentions).slice(0, 6)
+
+const strands = [
+  {
+    title: 'Maps',
+    body: 'Routes and regions drawn against the stories that cover them.',
+  },
+  {
+    title: 'Emergency information',
+    body: 'Embassies, insurance, and what to do when a trip goes wrong.',
+  },
+  {
+    title: 'Checklists',
+    body: 'What to sort before a visa run, a night bus, or a first solo trip.',
+  },
+]
+---
+
+<PageLayout
+  title="Resources"
+  eyebrow="The practical half"
+  standfirst="Everything our writers actually used, lifted out of the stories that mention it. Nothing here is sponsored, and nothing is on the list because a brand asked."
+>
+  <section class="products">
+    <div class="products-inner">
+      <SectionHead
+        title="Products"
+        note="Gear, apps, and services named in a Dispatch or a Signal — with the pieces that named them."
+        actionLabel="View all products"
+        actionHref={products.length > 0 ? '/resources/products' : null}
+      />
+
+      {
+        preview.length > 0 ? (
+          <div class="products-grid">
+            {preview.map((product) => (
+              <ProductCard product={product} />
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            title="No products yet"
+            body="Products appear here as soon as a published story references one. Nothing has been filed yet, so there is nothing to gather."
+            actionLabel="Pitch us a story"
+            actionHref={settings?.pitchUsUrl}
+          />
+        )
+      }
+    </div>
+  </section>
+
+  <section class="strands">
+    <div class="strands-inner">
+      <h2 class="strands-heading">Also coming</h2>
+      <p class="strands-note">
+        Resources grows as the archive does. These are the next three, not yet built.
+      </p>
+      <dl class="strands-list">
+        {
+          strands.map((strand) => (
+            <div class="strand">
+              <dt class="strand-title">{strand.title}</dt>
+              <dd class="strand-body">{strand.body}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </div>
+  </section>
+</PageLayout>
+
+<style>
+  .products-inner,
+  .strands-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 var(--gutter);
+  }
+
+  .products {
+    padding-bottom: var(--space-24);
+  }
+
+  .products-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-12) var(--space-8);
+  }
+
+  /*
+    The dense counterweight to the section above: no images, no cards, three
+    short lines set at the reading measure.
+  */
+  .strands {
+    padding: var(--space-16) 0 var(--space-24);
+    background: var(--surface);
+  }
+
+  .strands-heading {
+    margin: 0;
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--fg);
+    font-family: var(--font-serif);
+    font-size: var(--text-xl);
+    font-weight: 500;
+    line-height: 1.2;
+    color: var(--fg);
+  }
+
+  .strands-note {
+    max-width: var(--measure);
+    margin: var(--space-2) 0 var(--space-8);
+    font-family: var(--font-serif);
+    font-size: var(--text-base);
+    line-height: 1.5;
+    color: var(--muted);
+  }
+
+  .strands-list {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-8);
+    max-width: 1000px;
+    margin: 0;
+  }
+
+  .strand-title {
+    margin: 0 0 var(--space-2);
+    font-family: var(--font-serif);
+    font-size: var(--text-lg);
+    font-weight: 500;
+    color: var(--fg);
+  }
+
+  .strand-body {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: var(--text-base);
+    line-height: 1.5;
+    color: var(--muted);
+  }
+
+  @media (max-width: 1000px) {
+    .products-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 760px) {
+    .strands-list {
+      grid-template-columns: 1fr;
+      gap: var(--space-6);
+    }
+  }
+
+  @media (max-width: 620px) {
+    .products-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
