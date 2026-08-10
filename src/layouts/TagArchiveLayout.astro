@@ -1,0 +1,152 @@
+---
+// The archive behind a single place or reason. Both axes render through this
+// one file: the query differs, the page does not, and two near-identical
+// templates would drift apart the first time either was edited — the same
+// reasoning that gave Dispatch and Signal a shared ArticleLayout.
+//
+// The tag's own description is the standfirst. That is what the field is for
+// (content-model.md: "shown at top of archive page"), and it means the page
+// says something specific even when the grid below it is empty.
+import PageLayout from './PageLayout.astro'
+import ArticleCard from '../components/ArticleCard.astro'
+import EmptyState from '../components/EmptyState.astro'
+import TagLink from '../components/TagLink.astro'
+import type {ArticleCard as ArticleCardType} from '../lib/articles'
+
+export interface SiblingTag {
+  href: string
+  label: string
+  color?: string | null
+  current?: boolean
+}
+
+interface Props {
+  title: string
+  description?: string | null
+  /** "Place" or "Reason" — the axis this tag belongs to. */
+  eyebrow: string
+  /** "Places to go" / "Reasons to go" — heads the sibling row. */
+  siblingsLabel: string
+  articles: ArticleCardType[]
+  siblings: SiblingTag[]
+  /** Dropped when the URL isn't set in Sanity. */
+  pitchUrl?: string | null
+}
+
+const {title, description, eyebrow, siblingsLabel, articles, siblings, pitchUrl} = Astro.props
+
+const countLabel =
+  articles.length === 0
+    ? 'Nothing filed here yet'
+    : articles.length === 1
+      ? '1 story'
+      : `${articles.length} stories`
+---
+
+<PageLayout title={title} eyebrow={eyebrow} standfirst={description}>
+  <div class="archive">
+    <p class="archive-count">{countLabel}</p>
+
+    {
+      articles.length > 0 ? (
+        <div class="archive-grid">
+          {articles.map((article) => (
+            <ArticleCard article={article} />
+          ))}
+        </div>
+      ) : (
+        /*
+          Never a blank column. The description is already in the header
+          above, so what belongs here is the ask — and the sibling row below
+          gives a reader somewhere to go either way.
+        */
+        <EmptyState
+          title={`Nothing under ${title} yet`}
+          body="VIA is student-written, so this fills up when someone goes and files. If that is you, we would rather run your piece than leave this page empty."
+          actionLabel="Pitch us a story"
+          actionHref={pitchUrl}
+        />
+      )
+    }
+
+    {
+      siblings.length > 0 && (
+        <nav class="siblings" aria-label={siblingsLabel}>
+          <p class="siblings-label">{siblingsLabel}</p>
+          <ul class="siblings-list">
+            {siblings.map((sibling) => (
+              <li>
+                <TagLink
+                  href={sibling.href}
+                  label={sibling.label}
+                  color={sibling.color}
+                  current={sibling.current}
+                />
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )
+    }
+  </div>
+</PageLayout>
+
+<style>
+  .archive {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 var(--gutter);
+  }
+
+  .archive-count {
+    margin: 0 0 var(--space-8);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--fg);
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    letter-spacing: 0.04em;
+    color: var(--muted);
+  }
+
+  .archive-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-12) var(--space-8);
+  }
+
+  /* An archive is never a dead end — the rest of the axis sits at the foot. */
+  .siblings {
+    margin-top: var(--space-24);
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--border);
+  }
+
+  .siblings-label {
+    margin: 0 0 var(--space-4);
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    letter-spacing: 0.04em;
+    color: var(--muted);
+  }
+
+  .siblings-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  @media (max-width: 1000px) {
+    .archive-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 620px) {
+    .archive-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
