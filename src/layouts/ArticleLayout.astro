@@ -29,7 +29,23 @@ const formatLabels: Record<string, string> = {
 }
 const formatLabel = article.format ? formatLabels[article.format] : null
 
-const tags = [...(article.places ?? []), ...(article.reasons ?? [])].map((t) => t.title)
+/*
+  "Filed under" is the way into the Journeys archives. Places come first and
+  carry their region color; reasons follow, uncolored. A tag whose slug or
+  title never got filled in is dropped rather than printed as a dead
+  rectangle — neither field is required() on the tag types.
+*/
+const tags = [
+  ...(article.places ?? []).map((tag) => ({
+    ...tag,
+    href: tag.slug ? placeHref(tag.slug) : null,
+  })),
+  ...(article.reasons ?? []).map((tag) => ({
+    ...tag,
+    color: null,
+    href: tag.slug ? reasonHref(tag.slug) : null,
+  })),
+].filter((tag) => tag.title && tag.href)
 
 const kicker = articleKickerParts(article)
 
