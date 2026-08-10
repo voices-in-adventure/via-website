@@ -45,8 +45,8 @@ export interface Article extends ArticleCard {
   body: PortableTextBlock[]
   format?: 'guide' | 'feature' | 'essay' | null
   duration?: number | null
-  places?: {title: string}[] | null
-  reasons?: {title: string}[] | null
+  places?: ArticleTag[] | null
+  reasons?: ArticleTag[] | null
   /** Signals only. */
   newsPeg?: string | null
   /** Signals only. */
