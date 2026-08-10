@@ -33,8 +33,7 @@ interface Props {
   pitchUrl?: string | null
 }
 
-const {title, description, eyebrow, siblingsLabel, articles: articles_, siblings, pitchUrl} = Astro.props
-const articles = [] as typeof articles_
+const {title, description, eyebrow, siblingsLabel, articles, siblings, pitchUrl} = Astro.props
 
 const countLabel =
   articles.length === 0
