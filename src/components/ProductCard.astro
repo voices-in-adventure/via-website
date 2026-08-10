@@ -15,11 +15,16 @@ interface Props {
   product: Product
   /** The full list prints the mentions; the landing preview only counts them. */
   showArticles?: boolean
+  /**
+   * Off on the full list, where the cards already sit under a category
+   * heading and repeating it on every card just says "Gear" twice.
+   */
+  showCategory?: boolean
 }
 
-const {product, showArticles = false} = Astro.props
+const {product, showArticles = false, showCategory = true} = Astro.props
 
-const category = product.category ? CATEGORY_LABELS[product.category] : null
+const category = showCategory && product.category ? CATEGORY_LABELS[product.category] : null
 
 const mentions =
   product.articles.length === 1 ? 'In 1 story' : `In ${product.articles.length} stories`
