@@ -1,0 +1,180 @@
+---
+// A product on Resources. Not ArticleCard — a product has no byline, no date,
+// and no piece to read; what it has is a category, a link off-site, and the
+// stories that mentioned it.
+//
+// On the full list the mentions are printed as a short dated citation list.
+// They are deliberately not ArticleCards: a card grid nested under each of
+// twenty products would bury the products the page is about. ArticleCard
+// stays the component for article *listings*; this is a footnote.
+import {urlFor} from '../lib/sanity'
+import {articleHref, formatDate} from '../lib/articles'
+import {CATEGORY_LABELS, linkLabel, type Product} from '../lib/products'
+
+interface Props {
+  product: Product
+  /** The full list prints the mentions; the landing preview only counts them. */
+  showArticles?: boolean
+}
+
+const {product, showArticles = false} = Astro.props
+
+const category = product.category ? CATEGORY_LABELS[product.category] : null
+
+const mentions =
+  product.articles.length === 1 ? 'In 1 story' : `In ${product.articles.length} stories`
+---
+
+<article class="product">
+  {
+    product.image && (
+      <img
+        class="product-media"
+        src={urlFor(product.image).width(800).height(600).fit('crop').quality(80).url()}
+        alt={product.name}
+      />
+    )
+  }
+
+  <div class="product-body">
+    {category && <p class="product-category">{category}</p>}
+    <h3 class="product-name">{product.name}</h3>
+    {product.description && <p class="product-description">{product.description}</p>}
+
+    {
+      product.url && (
+        <p class="product-link">
+          <a href={product.url} target="_blank" rel="noopener noreferrer nofollow">
+            {linkLabel(product.url)}
+          </a>
+        </p>
+      )
+    }
+
+    {
+      showArticles ? (
+        <div class="product-mentions">
+          <p class="product-mentions-label">{mentions}</p>
+          <ul class="product-mentions-list">
+            {product.articles.map((article) => (
+              <li>
+                <a href={articleHref(article)}>{article.title}</a>
+                <span class="product-mentions-date">{formatDate(article.publishedAt)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : (
+        <p class="product-mentions-label product-mentions-label--alone">{mentions}</p>
+      )
+    }
+  </div>
+</article>
+
+<style>
+  .product {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  /* Full-bleed media has no radius — via-design.md. */
+  .product-media {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    margin-bottom: var(--space-4);
+  }
+
+  .product-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  .product-category {
+    margin: 0 0 var(--space-2);
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    letter-spacing: 0.04em;
+    color: var(--muted);
+  }
+
+  .product-name {
+    margin: 0 0 var(--space-3);
+    font-family: var(--font-serif);
+    font-size: var(--text-lg);
+    font-weight: 500;
+    line-height: 1.3;
+    color: var(--fg);
+  }
+
+  .product-description {
+    margin: 0 0 var(--space-4);
+    font-family: var(--font-serif);
+    font-size: var(--text-base);
+    line-height: 1.5;
+    color: var(--muted);
+  }
+
+  /*
+    Off-site links stay --fg on their default underline rather than taking the
+    accent. A list of twenty products would otherwise spend the page's whole
+    accent budget on outbound links — anti-slop.md caps it at two per screen.
+  */
+  .product-link {
+    margin: 0 0 var(--space-4);
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    color: var(--fg);
+  }
+
+  .product-mentions {
+    margin-top: auto;
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border);
+  }
+
+  .product-mentions-label {
+    margin: 0 0 var(--space-3);
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    color: var(--muted);
+  }
+
+  /* On the landing preview the count is the last line, so it carries no gap. */
+  .product-mentions-label--alone {
+    margin: auto 0 0;
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border);
+  }
+
+  .product-mentions-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .product-mentions-list li {
+    margin-bottom: var(--space-3);
+    font-family: var(--font-serif);
+    font-size: var(--text-sm);
+    line-height: 1.4;
+  }
+
+  .product-mentions-list li:last-child {
+    margin-bottom: 0;
+  }
+
+  .product-mentions-list a {
+    color: var(--fg);
+  }
+
+  .product-mentions-date {
+    display: block;
+    margin-top: var(--space-1);
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    color: var(--muted);
+  }
+</style>
