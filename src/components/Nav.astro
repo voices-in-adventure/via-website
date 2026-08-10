@@ -143,14 +143,17 @@ const links = [
     top: 0;
     left: 0;
     right: 0;
-    height: calc(var(--masthead-h) * 1.6);
+    height: calc(var(--masthead-h) * 3);
     z-index: -1;
     pointer-events: none;
     opacity: calc(1 - var(--masthead-t));
     background: linear-gradient(
       to bottom,
       color-mix(in srgb, var(--fg) 68%, transparent) 0%,
-      color-mix(in srgb, var(--fg) 60%, transparent) 62%,
+      color-mix(in srgb, var(--fg) 60%, transparent) 33%,
+      color-mix(in srgb, var(--fg) 51%, transparent) 50%,
+      color-mix(in srgb, var(--fg) 29%, transparent) 67%,
+      color-mix(in srgb, var(--fg) 9%, transparent) 83%,
       transparent 100%
     );
   }
