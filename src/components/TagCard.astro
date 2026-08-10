@@ -5,8 +5,13 @@
 // is anything in it yet.
 //
 // The count is shown even when it is zero. A tag with nothing in it is a real
-// state of this site and saying so is more useful than an unmarked link that
+// state of this site, and saying so is more useful than an unmarked link that
 // leads somewhere empty.
+//
+// The hover is the house scribble, same as ArticleCard, so the two kinds of
+// card on the site behave identically under the cursor.
+import Scribble from './Scribble.astro'
+
 interface Props {
   href: string
   title: string
@@ -22,16 +27,23 @@ const countLabel = count === 0 ? 'No stories yet' : count === 1 ? '1 story' : `$
 ---
 
 <article class="tag-card" data-color={color ?? undefined}>
-  <a class="tag-card-link" href={href}>
-    <h3 class="tag-card-title">{title}</h3>
+  <a class="tag-card-link" href={href} data-scribble>
+    <h3 class="tag-card-title">
+      <span class="tag-card-title-text">{title}<Scribble /></span>
+    </h3>
     {description && <p class="tag-card-description">{description}</p>}
     <p class="tag-card-count">{countLabel}</p>
   </a>
 </article>
 
 <style>
+  /*
+    The region color rides the top rule. It identifies which of the six
+    regions this is — the name is spelled out directly underneath, so the
+    color never carries the meaning on its own. Reasons have no region and
+    take the neutral rule.
+  */
   .tag-card {
-    /* Reasons have no region color; they take the neutral rule. */
     border-top: 3px solid var(--tag-color, var(--fg));
   }
 
@@ -50,16 +62,13 @@ const countLabel = count === 0 ? 'No stories yet' : count === 1 ? '1 story' : `$
     font-weight: 500;
     line-height: 1.25;
     color: var(--fg);
-    transition: color 180ms ease;
   }
 
-  /*
-    The title carries the hover, not the whole card. anti-slop.md rules out
-    hover-lift, scale, and glow on cards.
-  */
-  .tag-card-link:hover .tag-card-title,
-  .tag-card-link:focus-visible .tag-card-title {
-    color: var(--accent);
+  .tag-card-title-text {
+    position: relative;
+    display: inline-block;
+    --scribble-height: 0.7em;
+    --scribble-drop: -0.28em;
   }
 
   .tag-card-description {
@@ -95,11 +104,5 @@ const countLabel = count === 0 ? 'No stories yet' : count === 1 ? '1 story' : `$
   }
   [data-color='mideast'] {
     --tag-color: var(--tag-mideast);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .tag-card-title {
-      transition: none;
-    }
   }
 </style>
