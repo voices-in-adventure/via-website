@@ -112,7 +112,9 @@ const asOfFormatter = new Intl.DateTimeFormat('en-US', {
           <p class="tags-label">Filed under</p>
           <ul class="tags">
             {tags.map((tag) => (
-              <li class="tag">{tag}</li>
+              <li>
+                <TagLink href={tag.href!} label={tag.title!} color={tag.color} />
+              </li>
             ))}
           </ul>
         </footer>
