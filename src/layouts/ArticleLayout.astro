@@ -7,8 +7,9 @@
 // photography integrated rather than decorative.
 import BaseLayout from './BaseLayout.astro'
 import PortableBody from '../components/PortableBody.astro'
+import TagLink from '../components/TagLink.astro'
 import {urlFor} from '../lib/sanity'
-import {articleKickerParts, formatDate, type Article} from '../lib/articles'
+import {articleKickerParts, formatDate, placeHref, reasonHref, type Article} from '../lib/articles'
 
 interface Props {
   article: Article
