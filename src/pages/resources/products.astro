@@ -1,0 +1,104 @@
+---
+// The full product list, grouped by category, each product carrying the
+// stories that mention it.
+//
+// This is the first sub-view under Resources. It exists as its own route
+// rather than as a longer landing page because the other Resources strands
+// (maps, emergency information, checklists) will sit beside it, and a reader
+// who wants the gear should be able to land on the gear.
+import PageLayout from '../../layouts/PageLayout.astro'
+import SectionHead from '../../components/SectionHead.astro'
+import ProductCard from '../../components/ProductCard.astro'
+import EmptyState from '../../components/EmptyState.astro'
+import {sanityClient} from '../../lib/sanity'
+import {byMentions, groupByCategory, PRODUCTS_QUERY, type Product} from '../../lib/products'
+
+const [products, settings] = await Promise.all([
+  sanityClient.fetch<Product[]>(PRODUCTS_QUERY),
+  sanityClient.fetch<{pitchUsUrl?: string | null} | null>(
+    `*[_type == "siteSettings"][0]{pitchUsUrl}`,
+  ),
+])
+
+const groups = groupByCategory([...products].sort(byMentions))
+
+const total = products.length === 1 ? '1 product' : `${products.length} products`
+---
+
+<PageLayout
+  title="Products"
+  eyebrow="Resources"
+  standfirst="Gear, apps, services, and booking tools named in a VIA story, grouped by what they are. Each one lists the pieces that mentioned it, so you can read why before you buy."
+>
+  <div class="products">
+    {
+      groups.length > 0 ? (
+        <>
+          <p class="products-count">{total}, most-written-about first</p>
+
+          {groups.map((group) => (
+            <section class="group">
+              <SectionHead title={group.label} />
+              <div class="group-grid">
+                {group.products.map((product) => (
+                  <ProductCard product={product} showArticles />
+                ))}
+              </div>
+            </section>
+          ))}
+        </>
+      ) : (
+        <EmptyState
+          title="No products yet"
+          body="A product lands on this page the moment a published Dispatch or Signal references it. Nothing has been referenced yet — so rather than list things nobody has used, this page waits."
+          actionLabel="Pitch us a story"
+          actionHref={settings?.pitchUsUrl}
+        />
+      )
+    }
+  </div>
+</PageLayout>
+
+<style>
+  .products {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 var(--gutter);
+  }
+
+  .products-count {
+    margin: 0 0 var(--space-16);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--fg);
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    letter-spacing: 0.04em;
+    color: var(--muted);
+  }
+
+  .group {
+    margin-bottom: var(--space-24);
+  }
+
+  .group:last-child {
+    margin-bottom: 0;
+  }
+
+  .group-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-12) var(--space-8);
+  }
+
+  @media (max-width: 1000px) {
+    .group-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 620px) {
+    .group-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
