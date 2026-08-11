@@ -74,3 +74,8 @@ value in both `.env.local` and Vercel's dashboard.
   inherits this.
 - If a request conflicts with `via-design.md`, say so rather than silently
   picking one.
+- Keep completion summaries under five lines. Describe what changed, not how.
+- Don't verify work in a browser unless the task is specifically about
+  visual behavior under varied conditions. The owner checks visually.
+- Only read docs/via-design.md and docs/anti-slop.md for genuine design
+  work — not for copy edits, color swaps, or sizing changes.
