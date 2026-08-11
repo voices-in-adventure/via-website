@@ -88,18 +88,20 @@ function initials(name: string): string {
 >
   <section class="mission">
     <div class="mission-inner">
-      {
-        hasLongMission ? (
-          <PortableBody value={settings!.aboutMission!} />
-        ) : settings?.missionStatement ? (
-          <p class="mission-fallback">{settings.missionStatement}</p>
-        ) : (
-          <EmptyState
-            title="The mission is being written"
-            body="VIA's editors are drafting this now. It will appear here as soon as it is set in the CMS."
-          />
-        )
-      }
+      <div class="mission-content">
+        {
+          hasLongMission ? (
+            <PortableBody value={settings!.aboutMission!} />
+          ) : settings?.missionStatement ? (
+            <p class="mission-fallback">{settings.missionStatement}</p>
+          ) : (
+            <EmptyState
+              title="The mission is being written"
+              body="VIA's editors are drafting this now. It will appear here as soon as it is set in the CMS."
+            />
+          )
+        }
+      </div>
     </div>
   </section>
 
