@@ -97,7 +97,8 @@ const mediaSrc = article.heroImage
   /*
     Only the word that says what the piece is takes the accent. The city and
     the dash stay muted — colouring the whole string turned the accent into a
-    label background rather than a signal.
+    label background rather than a signal. Signal and Dispatch labels are
+    always blue, regardless of kickerAccent.
   */
   .card-kicker {
     margin: 0 0 var(--space-2);
@@ -108,10 +109,6 @@ const mediaSrc = article.heroImage
 
   .card-kicker-label {
     color: var(--accent);
-  }
-
-  .card-kicker--quiet .card-kicker-label {
-    color: var(--muted);
   }
 
   /*
