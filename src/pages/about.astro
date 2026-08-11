@@ -185,9 +185,8 @@ function initials(name: string): string {
 
 <style>
   /*
-    The site's container, not a reading column — PortableBody caps itself at
-    --measure with no auto margin, so the prose lands at the page's left edge
-    in line with the title above it and the team grid below.
+    The site's container, not a reading column — mission content splits into
+    two columns to hold height while staying readable at the hero width.
   */
   .mission-inner {
     max-width: 1400px;
@@ -199,12 +198,24 @@ function initials(name: string): string {
     padding-bottom: var(--space-24);
   }
 
+  .mission-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-8);
+  }
+
   .mission-fallback {
     margin: 0;
     font-family: var(--font-serif);
     font-size: var(--text-lg);
     line-height: 1.5;
     color: var(--fg);
+  }
+
+  @media (max-width: 1100px) {
+    .mission-content {
+      grid-template-columns: 1fr;
+    }
   }
 
   .team-inner,
