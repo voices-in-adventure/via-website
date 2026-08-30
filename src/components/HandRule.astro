@@ -57,18 +57,30 @@ const {weight = 'strong'} = Astro.props
 
   /*
     Drawn, and staying drawn, unless the browser can animate it on scroll.
+
+    Two things here are deliberate and load-bearing. Change either and the
+    rule disappears from the site, which is exactly what happened once:
+
+    1. The animation properties are LONGHANDS, never the `animation`
+       shorthand. Lightning CSS, which builds this site's CSS, folds a
+       neighbouring `animation-timeline` into the shorthand and emits
+       `animation: linear both hand-rule-draw view()`. That is invalid —
+       animation-timeline is deliberately not part of the shorthand — so the
+       browser drops the whole declaration and no animation runs.
+
+    2. The dash pattern that hides the stroke lives in the KEYFRAMES, not
+       here. If it sat here and the animation failed to attach for any
+       reason, the path would keep a full-length dash offset entirely out of
+       view and the rule would be permanently invisible. Kept in the
+       keyframes, a dropped animation simply leaves an ordinary solid line —
+       the same thing browsers without scroll-driven animation already get.
   */
   @supports (animation-timeline: view()) {
     @media (prefers-reduced-motion: no-preference) {
       .hand-rule path {
-        /* The gap is longer than the dash for the reason Scribble.astro
-           documents: with a repeating "1 1" pattern the next dash begins
-           exactly where the path ends, and a round cap draws that
-           zero-length segment as a stray dot. A gap of 2 puts it out of
-           reach. */
-        stroke-dasharray: 1 2;
-        stroke-dashoffset: 1;
-        animation: hand-rule-draw linear both;
+        animation-name: hand-rule-draw;
+        animation-timing-function: linear;
+        animation-fill-mode: both;
         animation-timeline: view();
         /*
           Draws across the last stretch of the rule's approach and finishes
@@ -81,11 +93,20 @@ const {weight = 'strong'} = Astro.props
     }
   }
 
+  /*
+    The gap is longer than the dash for the reason Scribble.astro documents:
+    with a repeating "1 1" pattern the next dash begins exactly where the path
+    ends, and a round cap draws that zero-length segment as a stray dot. A gap
+    of 2 puts it out of reach. The path carries pathLength="1", so a dash of 1
+    is the whole stroke.
+  */
   @keyframes hand-rule-draw {
     from {
+      stroke-dasharray: 1 2;
       stroke-dashoffset: 1;
     }
     to {
+      stroke-dasharray: 1 2;
       stroke-dashoffset: 0;
     }
   }

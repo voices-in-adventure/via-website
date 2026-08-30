@@ -519,7 +519,12 @@ const CONNECT_REASONS = ['Feedback', 'A correction', 'Partnership', 'Something e
   @supports (animation-timeline: view()) {
     @media (prefers-reduced-motion: no-preference) {
       .role {
-        animation: role-drift linear both;
+        /* Longhands, not the `animation` shorthand: Lightning CSS folds a
+           neighbouring animation-timeline into the shorthand and produces an
+           invalid declaration the browser then drops. See HandRule.astro. */
+        animation-name: role-drift;
+        animation-timing-function: linear;
+        animation-fill-mode: both;
         animation-timeline: view();
         animation-range: entry 10% cover 60%;
         animation-delay: calc(var(--role-i) * -0.12s);

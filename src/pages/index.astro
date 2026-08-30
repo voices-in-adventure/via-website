@@ -291,7 +291,12 @@ const HOUSE_HEROES = [
   @supports (animation-timeline: scroll()) {
     @media (prefers-reduced-motion: no-preference) {
       .hero-frame {
-        animation: hero-drift linear both;
+        /* Longhands, not the `animation` shorthand: Lightning CSS folds a
+           neighbouring animation-timeline into the shorthand and produces an
+           invalid declaration the browser then drops. See HandRule.astro. */
+        animation-name: hero-drift;
+        animation-timing-function: linear;
+        animation-fill-mode: both;
         animation-timeline: scroll(root block);
         animation-range: 0 100vh;
       }
