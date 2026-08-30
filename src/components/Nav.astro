@@ -17,6 +17,12 @@
 // is what keeps the movement calm — and it avoids the dead symmetry
 // anti-slop.md warns about.
 //
+// This was briefly changed to stack the links under the wordmark, which is
+// what the client's edit round asked for. It was reverted at the owner's
+// direction with the COO's sign-off: the original reads better on the page.
+// The stacked treatment survives on narrow screens, where it is not a
+// preference but the fix for the wordmark and the links colliding.
+//
 // `hasHero` is what tells the masthead it is allowed to start expanded and
 // light-on-photo. A page that doesn't pass it (any future page with no hero
 // image at the top) gets the compact solid bar from the first paint, which is
@@ -37,6 +43,20 @@ const links = [
 ]
 
 /*
+  Engage is the fifth item and is deliberately not one of the four above: it
+  is the only call to action in the masthead, it sits in a filled accent box
+  rather than on the rule, and it takes no scribble — the scribble is the
+  hover language for text links, and drawing one inside a solid box would
+  read as a mistake.
+
+  anti-slop.md caps the accent at two visible uses per screen, and this one
+  spends a use on every page permanently. The card kickers on the homepage,
+  Stories and Journeys are already demoted to pay for it (`kickerAccent`),
+  which is what keeps the budget honest.
+*/
+const engage = {label: 'Engage', href: '/engage'}
+
+/*
   Which section you are in. startsWith rather than equality so a tag archive
   at /journeys/places/europe still marks Journeys — a reader who has followed
   a tag two levels down should still be able to see where they are. None of
@@ -49,15 +69,33 @@ const isCurrent = (href: string) => pathname === href || pathname.startsWith(`${
 
 <nav class:list={['masthead', hasHero && 'masthead--hero']} id="site-masthead">
   <a class="masthead-logo" href="/" aria-label="VIA — Voices in Adventure, home"></a>
-  <ul class="masthead-links">
-    {
-      links.map((link) => (
-        <li>
-          <a href={link.href} aria-current={isCurrent(link.href) ? 'page' : undefined} data-scribble>{link.label}<Scribble /></a>
-        </li>
-      ))
-    }
-  </ul>
+  {/*
+    The links sit inside a full-width track rather than being positioned
+    against the masthead directly. That track is what lets one margin
+    interpolate them from centred to flush-right: a percentage margin
+    resolves against the track's width, so the compact bar's alignment is
+    exact without measuring anything.
+  */}
+  <div class="masthead-linkbar">
+    <ul class="masthead-links">
+      {
+        links.map((link) => (
+          <li>
+            <a href={link.href} aria-current={isCurrent(link.href) ? 'page' : undefined} data-scribble>{link.label}<Scribble /></a>
+          </li>
+        ))
+      }
+      <li>
+        <a
+          class="masthead-engage"
+          href={engage.href}
+          aria-current={isCurrent(engage.href) ? 'page' : undefined}
+        >
+          {engage.label}
+        </a>
+      </li>
+    </ul>
+  </div>
 </nav>
 
 <style>
@@ -76,6 +114,23 @@ const isCurrent = (href: string) => pathname === href || pathname.startsWith(`${
     initial-value: 1;
   }
 
+  /*
+    The width of the link row, written by the script below. It is only ever
+    used to centre the links on narrow screens; every desktop state reaches
+    its flush-right alignment with margin-inline-start: auto and never
+    consults this. So if the measurement is late or wrong, nothing on a wide
+    screen can be misaligned by it.
+
+    The initial value is the measured width of the four current links at
+    --text-sm, which is close enough that nothing visibly jumps on first
+    paint before the script corrects it.
+  */
+  @property --links-w {
+    syntax: '<length>';
+    inherits: true;
+    initial-value: 340px;
+  }
+
   .masthead {
     /* The two ends of every journey below. Read each calc() as
        "start at the tall value, travel to the short one as t goes 0 → 1." */
@@ -91,8 +146,11 @@ const isCurrent = (href: string) => pathname === href || pathname.startsWith(`${
       own ink runs to the very bottom of its box, so giving the logo this same
       offset puts the mark and the words on one line. Re-measure if --text-sm,
       the link line-height, or the utility face changes.
+
+      On narrow screens the two stack instead and this is overridden — see the
+      mobile block at the foot of this stylesheet.
     */
-    --logo-baseline: 19px;
+    --logo-bottom-tall: 19px;
 
     --logo-w: calc(var(--logo-w-tall) + (var(--logo-w-short) - var(--logo-w-tall)) * var(--masthead-t));
     --logo-h: calc(var(--logo-h-tall) + (var(--logo-h-short) - var(--logo-h-tall)) * var(--masthead-t));
@@ -196,16 +254,17 @@ const isCurrent = (href: string) => pathname === href || pathname.startsWith(`${
   }
 
   /*
-    Centred at t=0, flush to the gutter at t=1. The wordmark is the only thing
-    that moves horizontally.
+    Centred at t=0, flush to the gutter at t=1.
 
-    Anchored from the bottom, not the top, so it shares a baseline with the
-    links while the masthead is open. At t=1 it settles at --space-4, which
-    centres it in the compact bar.
+    Anchored from the bottom, not the top, so it rises off the links' row as
+    the block compresses rather than sliding through it. At t=1 it settles at
+    --space-4, which centres it in the compact bar.
   */
   .masthead-logo {
     position: absolute;
-    bottom: calc(var(--logo-baseline) + (var(--space-4) - var(--logo-baseline)) * var(--masthead-t));
+    bottom: calc(
+      var(--logo-bottom-tall) + (var(--space-4) - var(--logo-bottom-tall)) * var(--masthead-t)
+    );
     left: calc(
       (100% - var(--logo-w)) / 2 * (1 - var(--masthead-t)) + var(--gutter) * var(--masthead-t)
     );
@@ -228,18 +287,30 @@ const isCurrent = (href: string) => pathname === href || pathname.startsWith(`${
   }
 
   /*
-    Pinned to the bottom of the masthead in both states, so the links simply
-    ride up as the block compresses. They sit on the rule at t=0 and are
-    optically centred in the bar at t=1.
+    The track the links slide along. Pinned to the bottom of the masthead in
+    both states, so the row simply rides up as the block compresses: it sits
+    on the rule at t=0 and is optically centred in the bar at t=1.
   */
-  .masthead-links {
+  .masthead-linkbar {
     position: absolute;
+    left: var(--gutter);
     right: var(--gutter);
     bottom: calc(var(--space-3) + var(--space-4) * var(--masthead-t));
     display: flex;
+  }
+
+  /*
+    Flush to the right gutter in both states — margin-inline-start: auto does
+    the whole job, and the alignment is exact because nothing is measured.
+
+    The narrow-screen block below centres them instead, which is the one case
+    where the row needs --links-w.
+  */
+  .masthead-links {
+    display: flex;
     align-items: center;
     gap: var(--space-8);
-    margin: 0;
+    margin: 0 0 0 auto;
     padding: 0;
     list-style: none;
     font-family: var(--font-sans);
@@ -254,10 +325,81 @@ const isCurrent = (href: string) => pathname === href || pathname.startsWith(`${
     position: relative;
     display: inline-block;
     --scribble-height: 0.85em;
-    --scribble-drop: -0.15em;
+    --scribble-drop: -0.03em;
     /* This link's underline is the scribble, not the site-wide fallback. */
     background-image: none;
   }
+
+  /*
+    The one call to action in the masthead, in a filled accent box so it reads
+    as a different kind of thing from the four section links beside it.
+
+    It travels with the bar rather than against it: an outline over the hero
+    photo, filling to solid accent as the masthead goes opaque. The label is
+    white throughout, which is legible on the photo and on the fill, so only
+    the ground behind it changes. Square-ish corners per the radius token —
+    anti-slop.md rules out pills.
+
+    The selector is qualified with `.masthead-links a` on purpose. Unqualified,
+    `.masthead-links a { color: inherit }` outranks it and the label inherits
+    the travelling link colour — which turns the text near-black against the
+    blue as soon as the reader scrolls. Do not simplify this back.
+  */
+  .masthead-links a.masthead-engage {
+    display: inline-block;
+    padding: 0.4em 0.85em;
+    border-radius: var(--radius);
+    /*
+      Both of these ride --masthead-t, the same variable the masthead's own
+      background uses, so the box fills in at exactly the rate the bar behind
+      it goes solid.
+
+        t=0  over the hero photo — transparent inside, white outline
+        t=1  on the solid bar    — filled accent, outline the same blue
+
+      The border is present in both states and only changes colour, so the box
+      never changes size and nothing beside it shifts as the reader scrolls.
+    */
+    border: 1px solid color-mix(in srgb, var(--accent) calc(var(--masthead-t) * 100%), var(--bg));
+    background-color: color-mix(in srgb, var(--accent) calc(var(--masthead-t) * 100%), transparent);
+    color: var(--bg);
+    line-height: 1.35;
+    /*
+      The box is taller than the four text links beside it, and the link row
+      is anchored from its bottom edge — so without this the extra height
+      grows upward and lifts every link off centre: ~12px high on the compact
+      bar, and off the hairline in the expanded state too.
+
+      Cancelling its own padding and border in the block direction takes the
+      box out of the row's height calculation entirely. It still paints at
+      full size, centred on the text line by the row's align-items, but the
+      row measures the same as it did before there was a fifth item. Change
+      the padding above and this follows it automatically.
+    */
+    margin-block: calc((0.4em + 1px) * -1);
+    /* Not a text link: no scribble, and no site-wide underline either. */
+    background-image: none;
+  }
+
+  /*
+    Hover and focus fill solid in both states, including over the photo. The
+    transparent interior is the resting appearance; reaching for the box is a
+    deliberate act and deserves an unambiguous answer.
+  */
+  .masthead-links a.masthead-engage:hover,
+  .masthead-links a.masthead-engage:focus-visible {
+    border-color: var(--accent-bright);
+    background-color: var(--accent-bright);
+    color: var(--bg);
+  }
+
+  /*
+    No visual change on the Engage page itself. The box is already the one
+    thing in the masthead that does not look like the others, so inverting it
+    made the current page read as a disabled button rather than as "you are
+    here." The aria-current attribute is still set, so a screen reader is told
+    where it is either way.
+  */
 
   /*
     The section you are in keeps a rule under it. It borrows the site-wide
@@ -272,6 +414,59 @@ const isCurrent = (href: string) => pathname === href || pathname.startsWith(`${
     background-position: 0 100%;
     background-size: 100% 1px;
   }
+
+  /*
+    Narrow screens: the masthead is stacked and centred in BOTH states, and
+    the only thing the scroll changes is the wordmark's size and the ground
+    behind it.
+
+    This is the fix for the overlap the client reported. There was no
+    small-screen rule here at all, so the compact bar tried to run a 96px
+    wordmark and four links across one row; below roughly 700px the two ran
+    into each other on every page, the homepage included. Giving the links
+    their own row removes the collision by construction rather than by
+    shrinking type until it happens to fit.
+
+    Both offsets are held constant so the wordmark can never travel down into
+    the links' row as the block compresses — there is not enough height here
+    for the two to pass each other safely.
+  */
+  @media (max-width: 760px) {
+    .masthead {
+      --logo-w-tall: 120px;
+      --logo-h-tall: 55px;
+      --logo-w-short: 96px;
+      --logo-h-short: 44px;
+      --logo-bottom-tall: 45px;
+    }
+
+    .masthead-logo {
+      bottom: var(--logo-bottom-tall);
+      left: calc((100% - var(--logo-w)) / 2);
+    }
+
+    .masthead-linkbar {
+      bottom: var(--space-3);
+    }
+
+    .masthead-links {
+      gap: var(--space-4);
+      margin-inline-end: calc((100% - var(--links-w)) / 2);
+    }
+  }
+
+  /* Below this the five labels stop fitting on one line even at the tight
+     gap, so they give up the last of their air before they give up the row. */
+  @media (max-width: 380px) {
+    .masthead-links {
+      gap: var(--space-3);
+      font-size: var(--text-xs);
+    }
+
+    .masthead-links a.masthead-engage {
+      padding: 0.35em 0.6em;
+    }
+  }
 </style>
 
 <script>
@@ -285,6 +480,24 @@ const isCurrent = (href: string) => pathname === href || pathname.startsWith(`${
   */
   const masthead = document.getElementById('site-masthead')
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+  /*
+    Publishes the link row's own width so the expanded state can centre it.
+    See the --links-w note in the stylesheet for why only that state depends
+    on this, and why a stale value can never misalign the compact bar.
+
+    A ResizeObserver rather than a one-off measurement: the row's width
+    changes when the gap does at the two breakpoints above, and again
+    whenever the utility face finishes loading and the labels re-measure.
+  */
+  const linkRow = masthead?.querySelector('.masthead-links')
+
+  if (masthead && linkRow) {
+    new ResizeObserver(() => {
+      const width = linkRow.getBoundingClientRect().width
+      if (width > 0) masthead.style.setProperty('--links-w', `${width}px`)
+    }).observe(linkRow)
+  }
 
   if (masthead && masthead.classList.contains('masthead--hero') && !reduceMotion) {
     const styles = getComputedStyle(masthead)

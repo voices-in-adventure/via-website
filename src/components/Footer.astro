@@ -8,6 +8,7 @@
 // That is partly tidiness and partly so the hover scribble is attached in a
 // single place instead of six.
 import Scribble from './Scribble.astro'
+import Topography from './Topography.astro'
 import {sanityClient} from '../lib/sanity'
 
 interface SocialLink {
@@ -63,6 +64,10 @@ const columns: FooterColumn[] = [
       {label: 'Journeys', href: '/journeys'},
       {label: 'Resources', href: '/resources'},
       {label: 'About', href: '/about'},
+      {label: 'Engage', href: '/engage'},
+      // Not a masthead item: Standards is a reference section reached from
+      // About and from here.
+      {label: 'Standards & Ethics', href: '/standards'},
     ],
   },
   {
@@ -93,6 +98,8 @@ const columns: FooterColumn[] = [
 ---
 
 <footer class="footer">
+  <Topography tone="blue" />
+
   <div class="footer-inner">
     <div class="footer-brand">
       <a class="footer-logo" href="/" aria-label="VIA — Voices in Adventure, home"></a>
@@ -131,11 +138,20 @@ const columns: FooterColumn[] = [
        and opaque background or the still-stuck hero paints through it. */
     position: relative;
     z-index: 1;
+    overflow: hidden;
     background: var(--surface);
     border-top: 1px solid var(--border);
   }
 
+  /*
+    The contour pattern's home on every page. The footer is the right surface
+    for it: a short column of links and no body copy, so the texture has
+    nothing to compete with — which is exactly where it stopped working when
+    it sat behind the Signals and Reasons columns.
+  */
   .footer-inner {
+    position: relative;
+    z-index: 1;
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-16);
@@ -194,7 +210,7 @@ const columns: FooterColumn[] = [
     position: relative;
     display: inline-block;
     --scribble-height: 0.85em;
-    --scribble-drop: -0.15em;
+    --scribble-drop: -0.03em;
     /* These links use the scribble, not the site-wide fallback underline. */
     background-image: none;
   }

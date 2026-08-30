@@ -1,0 +1,657 @@
+---
+// Engage: the three ways in — contribute a piece, get in touch, or join.
+//
+// Every form here opens the reader's own email app with the fields already
+// filled in. There is no server and no form service yet, which is a decision
+// the owner took deliberately: the layouts are real so they can be reviewed,
+// and swapping in a service later means changing where the form posts, not
+// rebuilding the page.
+//
+// Two consequences worth knowing about, both handled rather than hidden:
+//   - Email cannot carry an attachment this way, so the submissions form asks
+//     for the piece to be attached to the message that opens. There is no file
+//     input, because an input that silently does nothing is worse than a
+//     sentence that tells the truth.
+//   - Without JavaScript there is nothing to build a message with, so every
+//     form also shows its plain address as a link. Nobody is stranded.
+import PageLayout from '../layouts/PageLayout.astro'
+import SectionHead from '../components/SectionHead.astro'
+import HandRule from '../components/HandRule.astro'
+import {sanityClient} from '../lib/sanity'
+
+interface OpenRole {
+  title: string
+  description: string
+}
+
+interface EngageSettings {
+  contributeEmail?: string | null
+  connectEmail?: string | null
+  joinEmail?: string | null
+  contributorPacketUrl?: string | null
+  applicationFormUrl?: string | null
+  openRoles?: OpenRole[] | null
+}
+
+const settings = await sanityClient.fetch<EngageSettings | null>(
+  `*[_type == "siteSettings"][0]{
+    contributeEmail, connectEmail, joinEmail,
+    contributorPacketUrl, applicationFormUrl,
+    openRoles[]{title, description}
+  }`,
+)
+
+const roles = settings?.openRoles ?? []
+
+// What a reader can send a piece as. Matches the formats VIA actually
+// publishes, so the choice means something to whoever reads the mail.
+const PIECE_TYPES = ['Dispatch', 'Destination Guide', 'Signal', 'Photography or illustration', 'Not sure yet']
+
+const CONNECT_REASONS = ['Feedback', 'A correction', 'Partnership', 'Something else']
+---
+
+<PageLayout
+  title="Engage"
+  standfirst="VIA is, at its heart, a community. And, as our name suggests, we rely on your voices to be able to grow and support young travelers all around the world. If you’re curious, please look through some of the links on this page to find ways to engage, and we look forward to hearing from you."
+  description="Write for VIA, get in touch, or join the team."
+>
+  <!-- ---------------------------------------------------------------- -->
+  <section class="block" id="contribute">
+    <SectionHead title="Write for VIA" />
+
+    <div class="block-body">
+      <div class="prose">
+        <p>
+          Have a story, reflection, or travel experience you think is worth sharing? VIA
+          welcomes contributions from young creators who want to publish their work without
+          taking on a recurring commitment. Contributors can submit written, visual, or
+          multimedia pieces while retaining full credit for their work.
+        </p>
+        <p>
+          Our contributor package outlines everything you need to know before submitting.
+          Once received, each piece is reviewed by a member of our team for quality, rigor,
+          originality, and alignment with VIA’s editorial and ethical standards. Selected
+          submissions then move forward for editing and publication, in collaboration with
+          the original author.
+        </p>
+
+        {
+          settings?.contributorPacketUrl && (
+            <p class="packet">
+              <a class="button" href={settings.contributorPacketUrl}>
+                Contributor packet
+              </a>
+            </p>
+          )
+        }
+      </div>
+
+      {
+        settings?.contributeEmail && (
+          <form class="form" data-mailto={settings.contributeEmail} data-subject="Submission to VIA">
+            <div class="field">
+              <label for="c-name">Your name</label>
+              <input id="c-name" name="Name" type="text" autocomplete="name" required />
+            </div>
+
+            <div class="field">
+              <label for="c-email">Your email</label>
+              <input id="c-email" name="Email" type="email" autocomplete="email" required />
+            </div>
+
+            <div class="field">
+              <label for="c-type">What are you sending?</label>
+              <select id="c-type" name="Piece type">
+                {PIECE_TYPES.map((type) => <option value={type}>{type}</option>)}
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="c-note">Tell us about it</label>
+              <textarea id="c-note" name="About the piece" rows="5" required />
+            </div>
+
+            {/*
+              Standing in for a file input. Email opened this way cannot carry
+              an attachment, so rather than a control that appears to upload
+              and does not, the form says what actually happens next.
+            */}
+            <p class="field-note">
+              Your piece goes on the email itself — attach it before you send.
+            </p>
+
+            <div class="form-actions">
+              <button class="button" type="submit">Send submission</button>
+              <p class="fallback">
+                Or write to <a href={`mailto:${settings.contributeEmail}`}>{settings.contributeEmail}</a>.
+              </p>
+            </div>
+          </form>
+        )
+      }
+    </div>
+  </section>
+
+  <!-- ---------------------------------------------------------------- -->
+  <section class="block block--tinted" id="connect">
+    <div class="block-inner">
+      <SectionHead title="Connect with VIA" />
+
+      <div class="block-body">
+        <div class="prose">
+          <p>
+            If you would like to share your thoughts with VIA, be they concerns, corrections,
+            partnership solicitations, or specific requests, send them our way with the form
+            below. A member of our team will be in touch shortly.
+          </p>
+        </div>
+
+        {
+          settings?.connectEmail && (
+            <form class="form" data-mailto={settings.connectEmail} data-subject="A message for VIA">
+              <div class="field">
+                <label for="n-name">Your name</label>
+                <input id="n-name" name="Name" type="text" autocomplete="name" required />
+              </div>
+
+              <div class="field">
+                <label for="n-email">Your email</label>
+                <input id="n-email" name="Email" type="email" autocomplete="email" required />
+              </div>
+
+              <div class="field">
+                <label for="n-reason">What is this about?</label>
+                <select id="n-reason" name="Subject">
+                  {CONNECT_REASONS.map((reason) => <option value={reason}>{reason}</option>)}
+                </select>
+              </div>
+
+              <div class="field">
+                <label for="n-note">Your message</label>
+                <textarea id="n-note" name="Message" rows="5" required />
+              </div>
+
+              {/*
+                The quick rating the client asked for. A fieldset of radios
+                rather than a star widget: it is one tab stop, it works with a
+                keyboard, and it needs no JavaScript to be understood.
+              */}
+              <fieldset class="rating">
+                <legend>How is the site working for you?</legend>
+                <div class="rating-row">
+                  {[1, 2, 3, 4, 5].map((score) => (
+                    <label class="rating-option">
+                      <input type="radio" name="Rating" value={`${score} out of 5`} />
+                      <span>{score}</span>
+                    </label>
+                  ))}
+                </div>
+                <p class="rating-scale">
+                  <span>Not well</span>
+                  <span>Very well</span>
+                </p>
+              </fieldset>
+
+              <div class="form-actions">
+                <button class="button" type="submit">Send message</button>
+                <p class="fallback">
+                  Or write to <a href={`mailto:${settings.connectEmail}`}>{settings.connectEmail}</a>.
+                </p>
+              </div>
+            </form>
+          )
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------------------------------------------------------------- -->
+  <section class="block" id="join">
+    <SectionHead title="Join VIA" />
+
+    <div class="prose prose--wide">
+      <p>
+        Turn your love for travel into something tangible with VIA. Whether you have stories
+        of your own to tell, or a passion to inspire others to take their first steps, we
+        would love to have you join our team.
+      </p>
+      <p>We’re on the lookout for some of these roles in particular right now:</p>
+    </div>
+
+    {
+      roles.length > 0 && (
+        <ul class="roles">
+          {roles.map((role, index) => (
+            <li class="role" style={`--role-i: ${index}`}>
+              <details class="role-card">
+                <summary>
+                  <span class="role-title">{role.title}</span>
+                  <span class="role-more" aria-hidden="true" />
+                </summary>
+                <p class="role-description">{role.description}</p>
+              </details>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+
+    <div class="prose prose--wide">
+      <p>
+        If you’re interested in a position not mentioned, or have a skillset that goes beyond
+        a particular description, you can still fill out the application form. If we think
+        you’re a match, a team member will be in touch with further steps.
+      </p>
+    </div>
+
+    {
+      (settings?.applicationFormUrl || settings?.joinEmail) && (
+        <p class="join-action">
+          <a class="button" href={settings.applicationFormUrl ?? `mailto:${settings.joinEmail}`}>
+            {settings.applicationFormUrl ? 'Apply to join VIA' : 'Email us about joining'}
+          </a>
+        </p>
+      )
+    }
+
+    <HandRule weight="hairline" />
+  </section>
+</PageLayout>
+
+<style>
+  .block {
+    position: relative;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: var(--space-24) var(--gutter) 0;
+  }
+
+  /*
+    The middle section sits on a flat tinted ground so three sections of
+    identical weight do not read as a template — via-design.md.
+
+    No contour pattern here, unlike Stories and Journeys: this section is
+    mostly form labels and input rules, and the pattern ran directly under
+    them and cost too much legibility. The tint alone does the same job.
+  */
+  .block--tinted {
+    max-width: none;
+    margin-top: var(--space-24);
+    padding: var(--space-24) 0;
+    background: var(--surface);
+    overflow: hidden;
+  }
+
+  .block-inner {
+    position: relative;
+    z-index: 1;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 var(--gutter);
+  }
+
+  /*
+    Prose left, form right. The prose sets up what the form is for, so they
+    belong beside each other rather than stacked with the form below the fold.
+  */
+  .block-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-16);
+    align-items: start;
+    margin-top: var(--space-8);
+  }
+
+  .prose {
+    max-width: 52ch;
+  }
+
+  .prose--wide {
+    max-width: 68ch;
+    margin-top: var(--space-8);
+  }
+
+  .prose p {
+    margin: 0 0 var(--space-4);
+    font-family: var(--font-serif);
+    font-size: var(--text-base);
+    line-height: 1.6;
+    color: var(--muted);
+  }
+
+  .packet {
+    margin-top: var(--space-8);
+  }
+
+  /* ---- forms ---- */
+
+  .form {
+    max-width: 34rem;
+  }
+
+  .field + .field {
+    margin-top: var(--space-6);
+  }
+
+  .field label {
+    display: block;
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: var(--space-2);
+  }
+
+  /*
+    Inputs are ruled, not boxed: a page of filled rounded rectangles is the
+    generic form look anti-slop.md warns about, and the site's own language
+    for "a line you write on" is already a rule.
+  */
+  .field input,
+  .field select,
+  .field textarea {
+    width: 100%;
+    padding: var(--space-2) 0;
+    border: 0;
+    border-bottom: 1px solid var(--border);
+    border-radius: 0;
+    background: transparent;
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    color: var(--fg);
+  }
+
+  .field textarea {
+    resize: vertical;
+    line-height: 1.5;
+  }
+
+  .field input:focus-visible,
+  .field select:focus-visible,
+  .field textarea:focus-visible {
+    outline: none;
+    border-bottom-color: var(--accent);
+  }
+
+  .field-note {
+    margin: var(--space-6) 0 0;
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    line-height: 1.5;
+    color: var(--muted);
+  }
+
+  .form-actions {
+    margin-top: var(--space-8);
+  }
+
+  .fallback {
+    margin: var(--space-4) 0 0;
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    color: var(--muted);
+  }
+
+  .fallback a {
+    color: var(--accent);
+  }
+
+  /*
+    The one button style on the site. Square-ish per the radius token; nothing
+    is pill-shaped, and it does not lift on hover.
+  */
+  .button {
+    display: inline-block;
+    padding: 0.65em 1.2em;
+    border: 0;
+    border-radius: var(--radius);
+    background: var(--accent);
+    color: var(--bg);
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .button:hover,
+  .button:focus-visible {
+    background: var(--accent-bright);
+    color: var(--bg);
+  }
+
+  /* ---- rating ---- */
+
+  .rating {
+    margin: var(--space-8) 0 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .rating legend {
+    padding: 0;
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .rating-row {
+    display: flex;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+  }
+
+  .rating-option {
+    flex: 1;
+    max-width: 4rem;
+  }
+
+  /*
+    The radio itself is hidden but still focusable, so the number is the
+    target and the keyboard still works. Focus is drawn on the number.
+  */
+  .rating-option input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .rating-option span {
+    display: block;
+    padding: var(--space-3) 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    color: var(--muted);
+    cursor: pointer;
+  }
+
+  .rating-option input:checked + span {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--bg);
+  }
+
+  .rating-option input:focus-visible + span {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .rating-scale {
+    display: flex;
+    justify-content: space-between;
+    margin: var(--space-2) 0 0;
+    max-width: 21rem;
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    color: var(--muted);
+  }
+
+  /* ---- open roles ---- */
+
+  .roles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: var(--space-6);
+    margin: var(--space-12) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /*
+    The client asked for floating boxes. anti-slop.md rules out decorative
+    elements that bob on a timer, so these drift on scroll position instead —
+    the same rule the homepage hero follows: it only moves because the reader
+    moved. Each card is offset by its index so the row never travels as a
+    block.
+
+    Browsers without scroll-driven animation, and readers who have asked for
+    reduced motion, get five cards that sit still and lose nothing.
+  */
+  .role {
+    margin: 0;
+  }
+
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .role {
+        animation: role-drift linear both;
+        animation-timeline: view();
+        animation-range: entry 10% cover 60%;
+        animation-delay: calc(var(--role-i) * -0.12s);
+      }
+    }
+  }
+
+  @keyframes role-drift {
+    from {
+      transform: translateY(1.1rem);
+    }
+    to {
+      transform: translateY(-0.5rem);
+    }
+  }
+
+  .role-card {
+    height: 100%;
+    padding: var(--space-6);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+  }
+
+  .role-card summary {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-3);
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .role-card summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .role-title {
+    font-family: var(--font-serif);
+    font-size: var(--text-base);
+    line-height: 1.25;
+    color: var(--fg);
+  }
+
+  /*
+    A drawn cross rather than an icon from a pack — two rules in the site's
+    stroke weight. It rotates into a minus when the card is open.
+  */
+  .role-more {
+    position: relative;
+    flex: none;
+    width: 0.7rem;
+    height: 0.7rem;
+    align-self: center;
+  }
+
+  .role-more::before,
+  .role-more::after {
+    content: '';
+    position: absolute;
+    inset: 50% 0 auto 0;
+    height: 1px;
+    background: var(--accent);
+    transition: transform 180ms ease;
+  }
+
+  .role-more::after {
+    transform: rotate(90deg);
+  }
+
+  .role-card[open] .role-more::after {
+    transform: rotate(0deg);
+  }
+
+  .role-description {
+    margin: var(--space-4) 0 0;
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    line-height: 1.55;
+    color: var(--muted);
+  }
+
+  .join-action {
+    margin-top: var(--space-12);
+  }
+
+  @media (hover: hover) {
+    .role-card:hover {
+      border-color: var(--accent);
+    }
+  }
+
+  @media (max-width: 900px) {
+    .block-body {
+      grid-template-columns: 1fr;
+      gap: var(--space-12);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .role-more::before,
+    .role-more::after {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  /*
+    Builds a mailto: message out of a form and hands it to the reader's email
+    app. Every labelled control becomes a "Label: value" line in the body.
+
+    Progressive enhancement: without this, the forms still render and every
+    one of them shows its plain address underneath, so the page never depends
+    on the script to be usable.
+  */
+  for (const form of document.querySelectorAll<HTMLFormElement>('form[data-mailto]')) {
+    form.addEventListener('submit', (event) => {
+      event.preventDefault()
+
+      const address = form.dataset.mailto
+      if (!address) return
+
+      const lines: string[] = []
+      for (const [name, value] of new FormData(form).entries()) {
+        const text = String(value).trim()
+        if (text) lines.push(`${name}: ${text}`)
+      }
+
+      const subject = form.dataset.subject ?? 'A message for VIA'
+      const query = `subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(lines.join('\n\n'))}`
+      window.location.href = `mailto:${address}?${query}`
+    })
+  }
+</script>
