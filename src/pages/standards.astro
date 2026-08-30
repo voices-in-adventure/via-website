@@ -1,0 +1,147 @@
+---
+// Standards and Ethics: the index to VIA's six-section Code of Ethics.
+//
+// The NYT register the client asked for: a plain reading column, no
+// photography, no cards. This is a reference document, not editorial — the
+// design job is to get out of the way and let someone find the section they
+// came for.
+import PageLayout from '../layouts/PageLayout.astro'
+import HandRule from '../components/HandRule.astro'
+import EmptyState from '../components/EmptyState.astro'
+import {sanityClient} from '../lib/sanity'
+import {standardsIntro} from '../lib/standards'
+
+interface PolicySummary {
+  title: string
+  slug: string
+  order: number
+  summary: string
+}
+
+const policies = await sanityClient.fetch<PolicySummary[]>(
+  `*[_type == "policy" && defined(slug.current)] | order(order asc){
+    title, "slug": slug.current, order, summary
+  }`,
+)
+---
+
+<PageLayout
+  title="Standards and Ethics"
+  eyebrow="About VIA"
+  standfirst={standardsIntro}
+  description="How VIA reports, sources, discloses, and corrects — the six sections of our Code of Ethics."
+>
+  <div class="standards">
+    {
+      policies.length > 0 ? (
+        <ol class="sections">
+          {policies.map((policy) => (
+            <li class="section">
+              <HandRule weight="hairline" />
+              <a class="section-link" href={`/standards/${policy.slug}`}>
+                <span class="section-number">{policy.order}</span>
+                <span class="section-text">
+                  <span class="section-title">{policy.title}</span>
+                  <span class="section-summary">{policy.summary}</span>
+                </span>
+              </a>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <EmptyState
+          title="The Code of Ethics is being set up"
+          body="Each section of VIA's standards gets a record in the CMS, and this list is built from those records. None have been added yet."
+        />
+      )
+    }
+  </div>
+</PageLayout>
+
+<style>
+  /*
+    A reading column, not the page-wide container the editorial pages use.
+    Someone lands here to read one policy through, so the measure matters
+    more than filling the window.
+  */
+  .standards {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 var(--gutter);
+  }
+
+  .sections {
+    list-style: none;
+    margin: var(--space-16) 0 0;
+    padding: 0;
+    max-width: 62ch;
+  }
+
+  .section + .section {
+    margin-top: var(--space-8);
+  }
+
+  /*
+    The whole row is the target, not just the title — a list of six links
+    where only the heading is clickable makes the summary feel like an
+    obstacle between the reader and the thing they want.
+  */
+  .section-link {
+    display: grid;
+    grid-template-columns: 2.5rem 1fr;
+    gap: var(--space-4);
+    padding: var(--space-6) 0;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  /*
+    Numbered because the six sections are one document read in order, and a
+    reader who has come from the About page needs to see that. Mono, matching
+    the ticker's data voice.
+  */
+  .section-number {
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    color: var(--muted);
+    padding-top: 0.35em;
+  }
+
+  .section-text {
+    display: block;
+  }
+
+  .section-title {
+    display: block;
+    font-family: var(--font-serif);
+    font-size: var(--text-lg);
+    line-height: 1.25;
+    color: var(--fg);
+  }
+
+  .section-summary {
+    display: block;
+    margin-top: var(--space-2);
+    font-size: var(--text-sm);
+    line-height: 1.55;
+    color: var(--muted);
+    max-width: 54ch;
+  }
+
+  /*
+    The site's hover language is the drawn underline under a title. Here it is
+    a colour shift instead: eight scribbles stacked down one column would read
+    as decoration rather than as a cue.
+  */
+  .section-link:hover .section-title,
+  .section-link:focus-visible .section-title {
+    color: var(--accent);
+  }
+
+  @media (max-width: 620px) {
+    .section-link {
+      grid-template-columns: 1.75rem 1fr;
+      gap: var(--space-3);
+    }
+  }
+</style>

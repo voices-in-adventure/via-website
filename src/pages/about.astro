@@ -9,6 +9,9 @@ import PageLayout from '../layouts/PageLayout.astro'
 import SectionHead from '../components/SectionHead.astro'
 import PortableBody from '../components/PortableBody.astro'
 import EmptyState from '../components/EmptyState.astro'
+import HandRule from '../components/HandRule.astro'
+import PhotoMontage from '../components/PhotoMontage.astro'
+import {standardsIntro} from '../lib/standards'
 import {sanityClient, urlFor} from '../lib/sanity'
 import type {SanityImageSource} from '@sanity/image-url'
 import type {PortableTextBlock} from 'astro-portabletext/types'
@@ -16,45 +19,68 @@ import type {PortableTextBlock} from 'astro-portabletext/types'
 interface AboutSettings {
   missionStatement?: string | null
   aboutMission?: PortableTextBlock[] | null
+  founderQuote?: string | null
+  founderAttribution?: string | null
   pitchUsUrl?: string | null
   feedbackUrl?: string | null
+}
+
+interface PolicyLink {
+  title: string
+  slug: string
 }
 
 interface TeamMember {
   name: string
   role?: string | null
   bio?: string | null
+  hometown?: string | null
+  travelMustHave?: string | null
   headshot?: SanityImageSource | null
 }
 
-const [settings, team] = await Promise.all([
+const [settings, team, policies] = await Promise.all([
   sanityClient.fetch<AboutSettings | null>(
-    `*[_type == "siteSettings"][0]{missionStatement, aboutMission, pitchUsUrl, feedbackUrl}`,
+    `*[_type == "siteSettings"][0]{
+      missionStatement, aboutMission, founderQuote, founderAttribution, pitchUsUrl, feedbackUrl
+    }`,
   ),
   // Everyone on the masthead, not only everyone with a byline — editors and
   // photo staff belong on this page whether or not they have filed yet.
   sanityClient.fetch<TeamMember[]>(
-    `*[_type == "author" && defined(name)] | order(name asc){name, role, bio, headshot}`,
+    `*[_type == "author" && defined(name)] | order(name asc){
+      name, role, bio, hometown, travelMustHave, headshot
+    }`,
+  ),
+  // The Code of Ethics sections, for the Standards block at the foot of the
+  // page. Titles and order come from the CMS so a renamed section does not
+  // need a code change here.
+  sanityClient.fetch<PolicyLink[]>(
+    `*[_type == "policy" && defined(slug.current)] | order(order asc){
+      title, "slug": slug.current
+    }`,
   ),
 ])
 
 /*
   A masthead runs by seniority, not alphabetically — opening the page on
   whoever happens to be called Annie tells a reader nothing about how VIA is
-  organised. Roles are ranked here rather than in Sanity so editors have no
-  extra field to keep in order; anything not listed sorts to the end, and
-  ties break alphabetically, so a new role added in Studio appears at the
-  bottom rather than disappearing.
+  organised. The order below is the client's own, transcribed from the order
+  they list the team in. Roles are ranked here rather than in Sanity so
+  editors have no extra field to keep in order; anything not listed sorts to
+  the end, and ties break alphabetically, so a role renamed in Studio drops
+  to the bottom of the grid rather than disappearing — which is the signal to
+  come and rename it here too.
 */
 const ROLE_ORDER = [
   'CEO/Founder',
   'Chief Operating Officer',
   'Managing Editor',
-  'Chief of Visibility Strategy',
-  'Chief of Staff/HR',
-  'Senior Editor',
+  'Chief Strategy Officer',
+  'Chief People Officer',
   'External Manager',
   'Digital Exposure Manager',
+  'Senior Editor',
   'Staff Writer',
 ]
 
@@ -71,6 +97,34 @@ const masthead = [...team].sort(
 // they haven't. Either way the page opens with something they wrote.
 const hasLongMission = (settings?.aboutMission?.length ?? 0) > 0
 
+/*
+  The people montage. Places are the homepage's job; this page is about the
+  people who go, which is the distinction the client drew. Downloaded into the
+  repo by scripts/fetch-montage-photos.mjs — never hotlinked, per CLAUDE.md.
+
+  Black and white is applied in CSS rather than baked into the files, so the
+  originals stay reusable and the treatment is a one-line change.
+*/
+const MONTAGE = [
+  {src: '/imagery/people/people-1.jpg', position: 'center 45%'},
+  {src: '/imagery/people/people-2.jpg', position: 'center 50%'},
+  {src: '/imagery/people/people-3.jpg', position: 'center 40%'},
+  {src: '/imagery/people/people-4.jpg', position: 'center 55%'},
+  {src: '/imagery/people/people-5.jpg', position: 'center 50%'},
+  {src: '/imagery/people/people-6.jpg', position: 'center 50%'},
+  {src: '/imagery/people/people-7.jpg', position: 'center 45%'},
+  {src: '/imagery/people/people-8.jpg', position: 'center 50%'},
+]
+
+/*
+  Whether there is anything to put on the back of someone's card. Annie Wion
+  has a name and a role and nothing else in the client's copy, so her card
+  stays a plain one rather than turning over to show nothing.
+*/
+function hasDetails(member: TeamMember): boolean {
+  return Boolean(member.hometown || member.travelMustHave || member.bio)
+}
+
 /** "Ada Okonjo" → "AO". Stands in for a headshot nobody has uploaded yet. */
 function initials(name: string): string {
   return name
@@ -84,8 +138,23 @@ function initials(name: string): string {
 
 <PageLayout
   title="About VIA"
-  standfirst="A travel publication written by students, about the way people actually travel when they are young, broke, and going anyway."
+  description="Voices in Adventure is a travel publication written by students, for the way people travel when they are young."
 >
+  {
+    settings?.founderQuote && (
+      <section class="founder">
+        <div class="founder-inner">
+          <blockquote class="founder-quote">
+            <p>“{settings.founderQuote}”</p>
+            {settings.founderAttribution && (
+              <footer class="founder-attribution">– {settings.founderAttribution}</footer>
+            )}
+          </blockquote>
+        </div>
+      </section>
+    )
+  }
+
   <section class="mission">
     <div class="mission-inner">
       <div class="mission-content">
@@ -105,6 +174,20 @@ function initials(name: string): string {
     </div>
   </section>
 
+  {/*
+    The montage sits between two blocks of text, which is where the page
+    otherwise runs flat. Contained rather than full-bleed: the homepage owns
+    the full-bleed hero, and the source photos top out around 1000px, so a
+    band at reading width stays sharp where a full-bleed one would not.
+  */}
+  <section class="montage-band" aria-label="VIA readers and contributors">
+    <div class="montage-inner">
+      <div class="montage-frame">
+        <PhotoMontage photos={MONTAGE} holdMs={7000} />
+      </div>
+    </div>
+  </section>
+
   <section class="team">
     <div class="team-inner">
       <SectionHead
@@ -117,25 +200,71 @@ function initials(name: string): string {
           <ul class="team-grid">
             {masthead.map((member) => (
               <li class="member">
-                {member.headshot ? (
-                  <img
-                    class="member-photo"
-                    src={urlFor(member.headshot).width(600).height(600).fit('crop').quality(80).url()}
-                    alt={member.name}
-                  />
-                ) : (
-                  /*
-                    A set of initials rather than a generic silhouette. It is
-                    honest about what is missing without printing a grey
-                    placeholder body into the middle of the masthead.
-                  */
-                  <span class="member-photo member-photo--empty" aria-hidden="true">
-                    {initials(member.name)}
-                  </span>
-                )}
-                <p class="member-name">{member.name}</p>
-                {member.role && <p class="member-role">{member.role}</p>}
-                {member.bio && <p class="member-bio">{member.bio}</p>}
+                {/*
+                  Name and role on the front, everything else on the back. The
+                  card turns over on hover, on tap, and on Enter or Space when
+                  it has keyboard focus.
+
+                  Someone with no details to show — a new hire with only a name
+                  and a role in the CMS — gets a plain card that does not turn,
+                  rather than one that flips to an empty back.
+                */}
+                <div
+                  class:list={['member-card', hasDetails(member) && 'member-card--flips']}
+                  tabindex={hasDetails(member) ? 0 : undefined}
+                >
+                  <div class="member-inner">
+                    <div class="member-face member-face--front">
+                      {member.headshot ? (
+                        <img
+                          class="member-photo"
+                          src={urlFor(member.headshot).width(600).height(600).fit('crop').quality(80).url()}
+                          alt={member.name}
+                        />
+                      ) : (
+                        /*
+                          A set of initials rather than a generic silhouette. It
+                          is honest about what is missing without printing a grey
+                          placeholder body into the middle of the masthead.
+                        */
+                        <span class="member-photo member-photo--empty" aria-hidden="true">
+                          {initials(member.name)}
+                        </span>
+                      )}
+                      <p class="member-name">{member.name}</p>
+                      {member.role && <p class="member-role">{member.role}</p>}
+                    </div>
+
+                    {hasDetails(member) && (
+                      <div class="member-face member-face--back">
+                        {/*
+                          The name again, quietly. On a grid of fourteen cards
+                          a reader who turns one over needs to know whose it is.
+                        */}
+                        <p class="member-back-name">{member.name}</p>
+
+                        {(member.hometown || member.travelMustHave) && (
+                          <dl class="member-facts">
+                            {member.hometown && (
+                              <>
+                                <dt>Hometown</dt>
+                                <dd>{member.hometown}</dd>
+                              </>
+                            )}
+                            {member.travelMustHave && (
+                              <>
+                                <dt>Travel must-have</dt>
+                                <dd>{member.travelMustHave}</dd>
+                              </>
+                            )}
+                          </dl>
+                        )}
+
+                        {member.bio && <p class="member-bio">{member.bio}</p>}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </li>
             ))}
           </ul>
@@ -151,14 +280,29 @@ function initials(name: string): string {
 
   <section class="contribute">
     <div class="contribute-inner">
-      <h2 class="contribute-heading">Write for us</h2>
-      <p class="contribute-body">
-        VIA runs on people who went somewhere and came back with something to say. You do
-        not need clips, an agent, or a plan — you need a place, a reason you went, and the
-        honesty to write down what it actually cost. Pitch in a paragraph. We read
-        everything.
-      </p>
+      <HandRule />
+      <h2 class="contribute-heading">Standards and Ethics</h2>
+      <p class="contribute-body">{standardsIntro}</p>
 
+      {
+        policies.length > 0 && (
+          <ol class="standards-links">
+            {policies.map((policy) => (
+              <li>
+                <a class="standards-link" href={`/standards/${policy.slug}`}>
+                  {policy.title}
+                </a>
+              </li>
+            ))}
+          </ol>
+        )
+      }
+
+      {/*
+        The two contact links used to be this section's whole purpose. They
+        keep a home here until the Engage page exists to take them; dropping
+        them now would leave no way to reach VIA from the site at all.
+      */}
       {
         (settings?.pitchUsUrl || settings?.feedbackUrl) && (
           <ul class="contribute-links">
@@ -184,6 +328,66 @@ function initials(name: string): string {
 </PageLayout>
 
 <style>
+  /*
+    The founder's quote opens the page. It is the one piece of display type on
+    About, and it gets the room to be that: no giant ornamental quote glyph,
+    which anti-slop.md rules out — just size, air, and real punctuation.
+
+    Held to a reading measure and indented off the left edge, so it reads as
+    someone speaking rather than as another headline.
+  */
+  .founder-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 var(--gutter);
+  }
+
+  .founder {
+    padding-bottom: var(--space-24);
+  }
+
+  /*
+    The type is set on the blockquote, not on the paragraph inside it, so that
+    the measure below resolves in the font it is actually being read in.
+
+    ch is the width of a "0" in whatever font the element itself carries — so
+    a max-width in ch on an element still inheriting 18px body type computes a
+    column sized for body text and then puts 32px display type in it. That is
+    the same trap ArticleLayout.astro documents for the hero caption; this is
+    the other end of it.
+  */
+  .founder-quote {
+    max-width: 44ch;
+    margin: 0;
+    padding-left: var(--space-8);
+    border-left: 1px solid var(--accent);
+    font-family: var(--font-serif);
+    font-size: var(--text-xl);
+    font-weight: 500;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+    color: var(--fg);
+  }
+
+  .founder-quote p {
+    margin: 0;
+  }
+
+  .founder-attribution {
+    margin-top: var(--space-6);
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    font-weight: 400;
+    letter-spacing: 0;
+    color: var(--muted);
+  }
+
+  @media (max-width: 900px) {
+    .founder-quote {
+      max-width: none;
+    }
+  }
+
   /*
     The site's container, not a reading column — mission content splits into
     two columns to hold height while staying readable at the hero width.
@@ -245,14 +449,134 @@ function initials(name: string): string {
   }
 
   /*
+    Each card turns over to show the person's details: hometown, travel
+    must-have, and their paragraph. The client asked for this directly.
+
+    The two faces are stacked in one grid cell rather than absolutely
+    positioned, so the card is exactly as tall as its taller face and no bio
+    is ever clipped — which is what would happen with a fixed height, because
+    the paragraphs run from two lines to eight.
+
+    Not a hover-lift: the card does not rise, glow, or gain a shadow.
+    anti-slop.md rules that out, and it is a different gesture from turning
+    something over to read the back.
+  */
+  .member-card {
+    position: relative;
+    perspective: 1200px;
+  }
+
+  .member-card--flips {
+    cursor: pointer;
+  }
+
+  .member-inner {
+    display: grid;
+    transform-style: preserve-3d;
+    transition: transform 520ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+
+  /*
+    Hover for a mouse, focus for a keyboard, and .is-flipped for a tap — the
+    script below toggles it. All three drive the same one transform.
+  */
+  .member-card--flips:hover .member-inner,
+  .member-card--flips:focus-visible .member-inner,
+  .member-card--flips.is-flipped .member-inner {
+    transform: rotateY(180deg);
+  }
+
+  .member-card--flips:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 4px;
+  }
+
+  /*
+    Both faces occupy the same cell. backface-visibility keeps the reversed
+    one from showing through mid-turn.
+  */
+  .member-face {
+    grid-area: 1 / 1;
+    backface-visibility: hidden;
+  }
+
+  .member-face--back {
+    /* The band behind is --surface, so the card reads as a lighter object
+       turning over on it rather than as a hole in the page. Framed in accent,
+       picking up the rule that runs under the photo on the front — the same
+       blue arriving from the other side of the card. */
+    background: var(--bg);
+    border: 1px solid var(--accent);
+    padding: var(--space-6);
+    transform: rotateY(180deg);
+    overflow: auto;
+  }
+
+  .member-back-name {
+    margin: 0 0 var(--space-4);
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  /*
+    Reduced motion: the card still turns over, but by crossfading rather than
+    rotating in three dimensions. The information is the point; the rotation
+    is not.
+  */
+  @media (prefers-reduced-motion: reduce) {
+    .member-inner {
+      transition: none;
+    }
+
+    .member-card--flips:hover .member-inner,
+    .member-card--flips:focus-visible .member-inner,
+    .member-card--flips.is-flipped .member-inner {
+      transform: none;
+    }
+
+    .member-face {
+      backface-visibility: visible;
+      transition: opacity 160ms linear;
+    }
+
+    .member-face--back {
+      transform: none;
+      opacity: 0;
+    }
+
+    .member-card--flips:hover .member-face--back,
+    .member-card--flips:focus-visible .member-face--back,
+    .member-card--flips.is-flipped .member-face--back {
+      opacity: 1;
+    }
+
+    .member-card--flips:hover .member-face--front,
+    .member-card--flips:focus-visible .member-face--front,
+    .member-card--flips.is-flipped .member-face--front {
+      opacity: 0;
+    }
+  }
+
+  /*
     Square crops, not circles. The register here is a masthead in a magazine,
     not a team page on a SaaS site.
+  */
+  /*
+    An accent rule along the bottom of every photo. It reads as one repeated
+    structural device holding the grid together rather than as fourteen
+    competing highlights, which is the distinction anti-slop.md's two-uses
+    cap is actually about — and it is the only colour on an otherwise
+    black-and-white stretch of the page.
   */
   .member-photo {
     width: 100%;
     aspect-ratio: 1 / 1;
     object-fit: cover;
     margin-bottom: var(--space-4);
+    border-bottom: 2px solid var(--accent);
   }
 
   .member-photo--empty {
@@ -261,6 +585,7 @@ function initials(name: string): string {
     justify-content: center;
     background: var(--bg);
     border: 1px solid var(--border);
+    border-bottom: 2px solid var(--accent);
     font-family: var(--font-serif);
     font-size: var(--text-xl);
     color: var(--muted);
@@ -276,10 +601,40 @@ function initials(name: string): string {
   }
 
   .member-role {
-    margin: 0 0 var(--space-3);
+    margin: 0;
     font-family: var(--font-sans);
     font-size: var(--text-xs);
     color: var(--muted);
+  }
+
+  /*
+    Hometown and travel must-have, as a two-column definition list rather than
+    two more sentences. They are the same two facts for all fourteen people,
+    so a reader scanning the masthead should be able to read down the column
+    and compare them without re-reading a label each time.
+  */
+  .member-facts {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: var(--space-1) var(--space-3);
+    margin: 0 0 var(--space-4);
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    line-height: 1.5;
+  }
+
+  /*
+    Labels in accent, values in text colour. The labels repeat on every card,
+    so colouring them separates the scaffolding from the thing a reader
+    actually came to read.
+  */
+  .member-facts dt {
+    color: var(--accent);
+  }
+
+  .member-facts dd {
+    margin: 0;
+    color: var(--fg);
   }
 
   .member-bio {
@@ -299,7 +654,6 @@ function initials(name: string): string {
     max-width: var(--measure);
     margin: 0;
     padding-top: var(--space-4);
-    border-top: 1px solid var(--fg);
     font-family: var(--font-serif);
     font-size: var(--text-xl);
     font-weight: 500;
@@ -331,6 +685,88 @@ function initials(name: string): string {
     color: var(--accent);
   }
 
+  /*
+    The six sections, numbered. This is a table of contents into one document,
+    not a menu of six unrelated pages, so the numbers carry meaning and the
+    list stays in a single column at reading width rather than spreading into
+    a grid.
+  */
+  .standards-links {
+    max-width: var(--measure);
+    margin: 0 0 var(--space-12);
+    padding: 0;
+    list-style: none;
+    counter-reset: standard;
+  }
+
+  .standards-links li {
+    counter-increment: standard;
+    border-top: 1px solid var(--border);
+  }
+
+  .standards-link {
+    display: block;
+    padding: var(--space-3) 0;
+    font-family: var(--font-serif);
+    font-size: var(--text-base);
+    line-height: 1.35;
+    color: var(--fg);
+    text-decoration: none;
+  }
+
+  .standards-link::before {
+    content: counter(standard);
+    display: inline-block;
+    width: 2rem;
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--muted);
+  }
+
+  .standards-link:hover,
+  .standards-link:focus-visible {
+    color: var(--accent);
+  }
+
+  /*
+    The people montage. Places are the homepage's subject; this page is about
+    the people who go — the distinction the client drew.
+
+    Black and white is a CSS filter rather than eight pre-processed files, so
+    the originals stay reusable and the treatment is one line to change. The
+    small contrast lift stops the grey reading as a photo that failed to load.
+  */
+  .montage-band {
+    padding-top: var(--space-24);
+    /* Room before the team band below, so the strip reads as its own beat
+       rather than as the top edge of the masthead grid. */
+    padding-bottom: var(--space-16);
+  }
+
+  .montage-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 var(--gutter);
+  }
+
+  .montage-frame {
+    position: relative;
+    /* Centred in the container rather than hung off the left gutter: it is a
+       composed strip, not a run of body copy, and the page has no other
+       full-width element for it to align to. */
+    max-width: 1040px;
+    margin-inline: auto;
+    aspect-ratio: 21 / 8;
+    overflow: hidden;
+    filter: grayscale(1) contrast(1.08);
+  }
+
+  @media (max-width: 620px) {
+    .montage-frame {
+      aspect-ratio: 4 / 3;
+    }
+  }
+
   @media (max-width: 1100px) {
     .team-grid {
       grid-template-columns: repeat(3, 1fr);
@@ -349,3 +785,30 @@ function initials(name: string): string {
     }
   }
 </style>
+
+<script>
+  /*
+    Turning a card over by tap or keyboard. Hover is handled in CSS and needs
+    nothing here; this covers the two cases hover cannot.
+
+    Touch devices fire a click, so one handler serves both. Enter and Space
+    are handled explicitly because the card is a div with tabindex, not a
+    button — a button would put its own type styling and semantics around a
+    photo and a name, which is not what this is.
+  */
+  for (const card of document.querySelectorAll<HTMLElement>('.member-card--flips')) {
+    const toggle = () => card.classList.toggle('is-flipped')
+
+    card.addEventListener('click', toggle)
+
+    card.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return
+      event.preventDefault() // Space would otherwise scroll the page.
+      toggle()
+    })
+
+    // Leaving the card with the pointer resets a tap-flip, so a card cannot
+    // be left face-down while every other card in the grid is face-up.
+    card.addEventListener('mouseleave', () => card.classList.remove('is-flipped'))
+  }
+</script>
