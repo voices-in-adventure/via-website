@@ -1,0 +1,19 @@
+---
+// Destination Guides. Same document type as a Dispatch — one value of
+// `format` decides — but their own URL space under Journeys, which is where
+// the client's edit round asked for them to live.
+import GuideLayout from '../../../layouts/GuideLayout.astro'
+import {sanityClient} from '../../../lib/sanity'
+import {ARTICLE_PROJECTION, type Article} from '../../../lib/articles'
+
+export async function getStaticPaths() {
+  const guides = await sanityClient.fetch<Article[]>(
+    `*[_type == "dispatch" && format == "guide" && publishedAt <= now()]{${ARTICLE_PROJECTION}}`,
+  )
+  return guides.map((article) => ({params: {slug: article.slug}, props: {article}}))
+}
+
+const {article} = Astro.props as {article: Article}
+---
+
+<GuideLayout article={article} />

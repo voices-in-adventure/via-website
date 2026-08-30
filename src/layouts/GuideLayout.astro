@@ -1,0 +1,448 @@
+---
+// The Destination Guide template: itinerary on the left, a map on the right
+// that follows the reader down it.
+//
+// A guide is still a Dispatch — same document type, same fields, one value of
+// `format` deciding — so this shares the article template's hero, kicker,
+// byline and tag foot. What differs is the middle: instead of one column of
+// prose, a guide is a numbered route, and the map is the second half of that
+// information rather than an illustration of it.
+//
+// See docs/content-model.md, and ArticleLayout.astro for the hero treatment
+// this mirrors.
+import BaseLayout from './BaseLayout.astro'
+import PortableBody from '../components/PortableBody.astro'
+import TagLink from '../components/TagLink.astro'
+import GuideMap from '../components/GuideMap.astro'
+import {urlFor} from '../lib/sanity'
+import {articleKickerParts, formatDate, placeHref, reasonHref, type Article} from '../lib/articles'
+
+interface Props {
+  article: Article
+}
+
+const {article} = Astro.props
+
+const heroUrl = urlFor(article.heroImage).width(2400).quality(80).url()
+const kicker = articleKickerParts(article)
+const stops = (article.stops ?? []).filter((stop) => stop.title)
+
+const tags = [
+  ...(article.places ?? []).map((tag) => ({...tag, href: tag.slug ? placeHref(tag.slug) : null})),
+  ...(article.reasons ?? []).map((tag) => ({
+    ...tag,
+    color: null,
+    href: tag.slug ? reasonHref(tag.slug) : null,
+  })),
+].filter((tag) => tag.title && tag.href)
+---
+
+<BaseLayout title={`${article.title} — VIA`} description={article.dek} hasHero>
+  <article class="guide">
+    <figure class="guide-hero">
+      <div class="guide-hero-media">
+        <img src={heroUrl} alt="" />
+        <div class="guide-hero-scrim" aria-hidden="true"></div>
+
+        <div class="guide-hero-text">
+          <p class="kicker">
+            <span class="kicker-label">{kicker.label}</span>{kicker.city && ` from ${kicker.city}`}
+            {article.duration && <span class="kicker-sep">·</span>}
+            {article.duration && `${article.duration} hours`}
+          </p>
+          <h1 class="title">{article.title}</h1>
+        </div>
+      </div>
+
+      {
+        article.heroCaption && (
+          <figcaption>
+            <span>{article.heroCaption}</span>
+          </figcaption>
+        )
+      }
+    </figure>
+
+    <header class="guide-head">
+      <p class="dek">{article.dek}</p>
+      <p class="byline">
+        {article.author?.name && <span class="byline-name">By {article.author.name}</span>}
+        {article.author?.role && <span class="byline-role">{article.author.role}</span>}
+        <span class="byline-date">{formatDate(article.publishedAt)}</span>
+      </p>
+    </header>
+
+    {
+      article.body?.length > 0 && (
+        <div class="guide-intro">
+          <PortableBody value={article.body} />
+        </div>
+      )
+    }
+
+    {
+      stops.length > 0 && (
+        <div class="guide-route">
+          {/*
+            The itinerary is the page. It is a plain ordered list of places
+            with directions, complete on its own — the map beside it is the
+            same information drawn, and the guide reads correctly with the map
+            missing, off-screen, or never loaded.
+          */}
+          <ol class="stops">
+            {stops.map((stop, i) => (
+              <li class="stop">
+                <p class="stop-number">{i + 1}</p>
+                {/* The map tracks headings, not whole blocks — see GuideMap. */}
+                <h2 class="stop-title" data-stop-index={i}>{stop.title}</h2>
+                {stop.note && <p class="stop-note">{stop.note}</p>}
+              </li>
+            ))}
+          </ol>
+
+          <div class="guide-map-column">
+            <div class="guide-map-sticky">
+              <GuideMap stops={stops} city={article.city} />
+              <p class="guide-map-label">
+                {stops.length} stops{article.city && ` in ${article.city}`}
+              </p>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    {
+      tags.length > 0 && (
+        <footer class="guide-foot">
+          <p class="tags-label">Filed under</p>
+          <ul class="tags">
+            {tags.map((tag) => (
+              <li>
+                <TagLink href={tag.href!} label={tag.title!} color={tag.color} />
+              </li>
+            ))}
+          </ul>
+        </footer>
+      )
+    }
+  </article>
+</BaseLayout>
+
+<style>
+  .guide {
+    padding-bottom: var(--space-32);
+  }
+
+  /* ---- hero: the same treatment as ArticleLayout, and for the same
+     measured reasons. See the scrim note there before changing any stop. ---- */
+
+  .guide-hero {
+    margin: 0 0 var(--space-12);
+  }
+
+  .guide-hero-media {
+    position: relative;
+  }
+
+  .guide-hero img {
+    display: block;
+    width: 100%;
+    height: 78vh;
+    min-height: 560px;
+    object-fit: cover;
+  }
+
+  .guide-hero-scrim {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(
+        to right,
+        color-mix(in srgb, var(--fg) 70%, transparent) 0%,
+        color-mix(in srgb, var(--fg) 66%, transparent) 22%,
+        color-mix(in srgb, var(--fg) 56%, transparent) 42%,
+        color-mix(in srgb, var(--fg) 28%, transparent) 62%,
+        color-mix(in srgb, var(--fg) 8%, transparent) 80%,
+        transparent 100%
+      ),
+      linear-gradient(
+        to top,
+        color-mix(in srgb, var(--fg) 26%, transparent) 0%,
+        color-mix(in srgb, var(--fg) 8%, transparent) 35%,
+        transparent 60%
+      );
+  }
+
+  .guide-hero-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: var(--masthead-tall) var(--gutter) 0;
+  }
+
+  .guide-hero-text .kicker,
+  .guide-hero-text .title {
+    max-width: 620px;
+  }
+
+  .guide-hero figcaption {
+    max-width: var(--measure);
+    margin: var(--space-3) auto 0;
+    padding: 0 var(--gutter);
+  }
+
+  .guide-hero figcaption span {
+    display: block;
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    line-height: 1.5;
+    color: var(--muted);
+  }
+
+  .kicker {
+    margin: 0 0 var(--space-6);
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    color: var(--bg);
+  }
+
+  .kicker-label {
+    color: var(--bg);
+  }
+
+  .kicker-sep {
+    margin: 0 var(--space-2);
+  }
+
+  .title {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: var(--text-2xl);
+    font-weight: 500;
+    line-height: 1.08;
+    letter-spacing: -0.01em;
+    color: var(--bg);
+  }
+
+  /* ---- head and intro: the reading column, as on any article ---- */
+
+  .guide-head,
+  .guide-intro {
+    max-width: var(--measure);
+    margin: 0 auto;
+    padding: 0 var(--gutter);
+  }
+
+  .guide-head {
+    margin-bottom: var(--space-12);
+  }
+
+  .dek {
+    max-width: var(--measure);
+    margin: 0 0 var(--space-8);
+    font-family: var(--font-serif);
+    font-size: var(--text-lg);
+    font-style: italic;
+    line-height: 1.45;
+    color: var(--muted);
+  }
+
+  .byline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-3);
+    margin: 0;
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border);
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    color: var(--muted);
+  }
+
+  .byline-name {
+    color: var(--fg);
+    font-weight: 500;
+  }
+
+  .guide-intro {
+    margin-bottom: var(--space-16);
+  }
+
+  /* ---- the route ----
+     Itinerary left, map right. The map column is the narrower of the two:
+     the writing is the guide, and the map is how you read it. */
+
+  /*
+    No align-items: start here. The map column has to stretch to the full
+    height of the row, or the sticky element inside it runs out of column to
+    travel down and unpins about one screen into a guide that is six screens
+    long.
+  */
+  .guide-route {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+    gap: var(--space-16);
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 var(--gutter);
+  }
+
+  .stops {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /*
+    Each stop gets most of a screen. That is not padding for its own sake —
+    the map advances one pin per stop, and stops packed tighter than this make
+    it jump several pins per scroll, which reads as a glitch rather than as
+    following along.
+  */
+  .stop {
+    padding-bottom: var(--space-24);
+  }
+
+  /* The route ends with the last stop, not with a screen of empty column. */
+  .stop:last-child {
+    padding-bottom: 0;
+  }
+
+  .stop-number {
+    margin: 0 0 var(--space-3);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--accent);
+  }
+
+  .stop-title {
+    margin: 0 0 var(--space-4);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--border);
+    font-family: var(--font-serif);
+    font-size: var(--text-xl);
+    font-weight: 500;
+    line-height: 1.2;
+    color: var(--fg);
+  }
+
+  .stop-note {
+    max-width: var(--measure);
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: var(--text-base);
+    line-height: 1.65;
+    color: var(--fg);
+  }
+
+  /*
+    The map holds still while the itinerary scrolls past it. position: sticky
+    does the whole job, the same way the homepage hero does — no scroll
+    listener for the pinning, only for which stop is current.
+  */
+  .guide-map-sticky {
+    position: sticky;
+    top: calc(var(--masthead-short) + var(--space-6));
+    height: calc(100vh - var(--masthead-short) - var(--space-16));
+    max-height: 720px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .guide-map-sticky :global(.guide-map) {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .guide-map-label {
+    flex: none;
+    margin: var(--space-3) 0 0;
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    color: var(--muted);
+  }
+
+  .guide-foot {
+    max-width: var(--measure);
+    margin: var(--space-16) auto 0;
+    padding: 0 var(--gutter);
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--border);
+  }
+
+  .tags-label {
+    margin: 0 0 var(--space-3);
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    color: var(--muted);
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  @media (max-width: 900px) {
+    .guide-hero img {
+      height: 68vh;
+      min-height: 460px;
+    }
+
+    .title {
+      font-size: var(--text-xl);
+      line-height: 1.15;
+    }
+
+    .guide-hero-text {
+      justify-content: flex-end;
+      padding-bottom: var(--space-12);
+    }
+
+    .guide-hero-scrim {
+      background: linear-gradient(
+        to top,
+        color-mix(in srgb, var(--fg) 76%, transparent) 0%,
+        color-mix(in srgb, var(--fg) 64%, transparent) 30%,
+        color-mix(in srgb, var(--fg) 34%, transparent) 55%,
+        color-mix(in srgb, var(--fg) 10%, transparent) 78%,
+        transparent 100%
+      );
+    }
+
+    /*
+      No room for two columns. The map goes to the top of the route as a
+      single fixed-height view of the whole itinerary, and the stops run
+      underneath as a plain list — which is the right shape for a phone
+      anyway: you look at the route once, then read.
+    */
+    .guide-route {
+      grid-template-columns: 1fr;
+      gap: var(--space-12);
+    }
+
+    .guide-map-column {
+      order: -1;
+    }
+
+    .guide-map-sticky {
+      position: static;
+      height: 60vh;
+      min-height: 320px;
+    }
+
+    .stop {
+      padding-bottom: var(--space-16);
+    }
+  }
+</style>

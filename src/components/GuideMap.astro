@@ -1,0 +1,218 @@
+---
+// The map beside a Destination Guide's itinerary. Sticks to the viewport
+// while the stops scroll past it, and follows along: as each stop reaches
+// reading position, the map pans to it and lights up its pin.
+//
+// This is the client's Atlas Obscura reference, built with Leaflet on
+// OpenStreetMap tiles. Leaflet is the site's only runtime dependency and it
+// loads on guide pages only — nothing else on the site pulls it in.
+//
+// No icon pack, per CLAUDE.md: the pins are numbered circles drawn here in
+// the site's own type, via Leaflet's divIcon.
+//
+// It is an enhancement, never the content. The itinerary is complete, in
+// order, and readable with the map absent — which is what a reader gets with
+// JavaScript off, on a narrow screen, or if the tile server is down.
+import type {GuideStop} from '../lib/articles'
+
+interface Props {
+  stops: GuideStop[]
+  /** Named on the map's own label so a reader knows what they are looking at. */
+  city?: string | null
+}
+
+const {stops, city} = Astro.props
+---
+
+<div
+  class="guide-map"
+  data-guide-map
+  data-stops={JSON.stringify(stops.map((s, i) => ({n: i + 1, title: s.title, lat: s.lat, lng: s.lng})))}
+  role="img"
+  aria-label={`Map of the ${stops.length} stops in this guide${city ? `, in ${city}` : ''}`}
+>
+</div>
+
+<style>
+  .guide-map {
+    height: 100%;
+    min-height: 320px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+
+  /*
+    Leaflet ships its own stylesheet, which the script below loads. These
+    override the handful of its defaults that clash with the site: rounded
+    controls, its blue focus ring, and the drop shadow on popups.
+  */
+  .guide-map :global(.leaflet-container) {
+    height: 100%;
+    background: var(--surface);
+    font-family: var(--font-sans);
+    outline: none;
+  }
+
+  .guide-map :global(.leaflet-control-zoom a) {
+    border-radius: 0;
+    color: var(--fg);
+    background: var(--bg);
+    border-color: var(--border);
+  }
+
+  .guide-map :global(.leaflet-control-attribution) {
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    font-family: var(--font-sans);
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  .guide-map :global(.leaflet-control-attribution a) {
+    color: var(--muted);
+  }
+
+  /*
+    The pins. A numbered disc in the site's utility face — drawn here rather
+    than pulled from an icon set, which CLAUDE.md rules out. The active one
+    takes the accent and grows slightly; everything else stays quiet, so the
+    map reads as "you are here, of these."
+  */
+  .guide-map :global(.guide-pin) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 1.5px solid var(--fg);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    font-weight: 500;
+    line-height: 1;
+    transition: transform 220ms ease, background-color 220ms ease, border-color 220ms ease;
+  }
+
+  .guide-map :global(.guide-pin--active) {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--bg);
+    transform: scale(1.25);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .guide-map :global(.guide-pin) {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  import L from 'leaflet'
+  import 'leaflet/dist/leaflet.css'
+
+  interface PinStop {
+    n: number
+    title: string
+    lat: number
+    lng: number
+  }
+
+  for (const el of document.querySelectorAll<HTMLElement>('[data-guide-map]')) {
+    const stops: PinStop[] = JSON.parse(el.dataset.stops || '[]')
+    if (stops.length === 0) continue
+
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    const map = L.map(el, {
+      // A map beside an article should not swallow the page scroll. Readers
+      // who want to zoom can use the controls or pinch.
+      scrollWheelZoom: false,
+      zoomControl: true,
+      attributionControl: true,
+    })
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap',
+    }).addTo(map)
+
+    const markers = stops.map((stop) =>
+      L.marker([stop.lat, stop.lng], {
+        title: `${stop.n}. ${stop.title}`,
+        icon: L.divIcon({
+          className: '',
+          html: `<span class="guide-pin">${stop.n}</span>`,
+          iconSize: [26, 26],
+          iconAnchor: [13, 13],
+        }),
+      }).addTo(map),
+    )
+
+    // Opens showing the whole route, so a reader sees the shape of the trip
+    // before they start reading it.
+    const bounds = L.latLngBounds(stops.map((s) => [s.lat, s.lng] as [number, number]))
+    map.fitBounds(bounds, {padding: [40, 40], maxZoom: 15})
+
+    const pinFor = (index: number) =>
+      markers[index]?.getElement()?.querySelector<HTMLElement>('.guide-pin')
+
+    let active = -1
+
+    const focus = (index: number) => {
+      if (index === active || !stops[index]) return
+      pinFor(active)?.classList.remove('guide-pin--active')
+      active = index
+      pinFor(active)?.classList.add('guide-pin--active')
+      map.panTo([stops[index].lat, stops[index].lng], {
+        animate: !reduceMotion,
+        duration: 0.6,
+      })
+    }
+
+    /*
+      Which stop the reader is on: the last one whose heading has risen past
+      the reading line. The elements carrying data-stop-index are the headings
+      themselves, not the blocks around them — measuring the block ran a stop
+      behind, because a block's top edge only clears the line once the reader
+      is already well into the previous stop's text.
+
+      The line sits just below centre, so a stop becomes current as its
+      heading settles into comfortable reading position rather than after it
+      has scrolled past.
+
+      Geometry is read on a rAF-throttled scroll, the same way the masthead
+      reads its own collapse in Nav.astro — a handful of rect reads on at most
+      a dozen elements, once per frame at the very most.
+    */
+    const sections = [...document.querySelectorAll<HTMLElement>('[data-stop-index]')]
+    if (sections.length === 0) continue
+
+    const READING_LINE = 0.55
+
+    const pick = () => {
+      const line = window.innerHeight * READING_LINE
+      let current = 0
+      for (let i = 0; i < sections.length; i++) {
+        if (sections[i].getBoundingClientRect().top <= line) current = i
+      }
+      focus(current)
+    }
+
+    let queued = false
+    const onScroll = () => {
+      if (queued) return
+      queued = true
+      requestAnimationFrame(() => {
+        queued = false
+        pick()
+      })
+    }
+
+    // Covers a reload part-way down the guide.
+    pick()
+    window.addEventListener('scroll', onScroll, {passive: true})
+    window.addEventListener('resize', onScroll, {passive: true})
+  }
+</script>
