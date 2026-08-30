@@ -4,15 +4,37 @@
 // to go" — a region and a mood are not the same question, and a reader
 // usually arrives already knowing which one they are asking.
 //
+// The two run as columns side by side for the full scroll, at the client's
+// direction, so a reader sees both ways of choosing at once rather than
+// scrolling past one to reach the other, in equal widths because neither
+// question is the more important one.
+//
+// Each column has the picker the client asked for at the top of it: a globe
+// for regions, a set of notebook dividers for reasons. Neither is the only
+// way in — the globe sits above the same six region cards it links to, and
+// the notebook dividers *are* the reason links, not a layer over them.
+//
 // Nothing here is curated. Both rows are the tag documents in Sanity, with
 // live counts. Publishing a tagged article is the only action that changes
 // this page — content-model.md: "None of these pages are hand-curated."
 import PageLayout from '../layouts/PageLayout.astro'
 import SectionHead from '../components/SectionHead.astro'
 import TagCard from '../components/TagCard.astro'
+import ArticleCard from '../components/ArticleCard.astro'
 import EmptyState from '../components/EmptyState.astro'
+import RegionGlobe from '../components/RegionGlobe.astro'
+import ReasonNotebook, {type NotebookEntry} from '../components/ReasonNotebook.astro'
 import {sanityClient} from '../lib/sanity'
-import {placeHref, reasonHref, TAG_COUNT, type PlaceColor} from '../lib/articles'
+import {
+  GUIDES,
+  placeHref,
+  reasonHref,
+  storyCountLabel,
+  TAG_COUNT,
+  type ArticleCard as ArticleCardType,
+  type PlaceColor,
+} from '../lib/articles'
+import {isGlobeRegion, type GlobeRegion} from '../lib/globe'
 
 interface TagRow {
   title?: string | null
@@ -27,33 +49,73 @@ interface TagRow {
 // blank rectangle.
 const usable = (rows: TagRow[]) => rows.filter((row) => row.title && row.slug)
 
-const [places, reasons] = await Promise.all([
+const [places, reasons, guides] = await Promise.all([
   sanityClient.fetch<TagRow[]>(
     `*[_type == "place"] | order(title asc){title, "slug": slug.current, description, color, ${TAG_COUNT}}`,
   ),
   sanityClient.fetch<TagRow[]>(
     `*[_type == "reason"] | order(title asc){title, "slug": slug.current, description, ${TAG_COUNT}}`,
   ),
+  sanityClient.fetch<ArticleCardType[]>(GUIDES),
 ])
 
 const placeRows = usable(places)
 const reasonRows = usable(reasons)
+
+// What the globe needs in order to label and link each region. A place with
+// no region colour set in Sanity has no shape to light up, so it is left off
+// the globe — its card underneath is unaffected.
+const globeRegions: GlobeRegion[] = placeRows
+  .filter((place) => isGlobeRegion(place.color))
+  .map((place) => ({
+    color: place.color as GlobeRegion['color'],
+    title: place.title!,
+    href: placeHref(place.slug!),
+    countLabel: storyCountLabel(place.count),
+  }))
+
+const notebookEntries: NotebookEntry[] = reasonRows.map((reason) => ({
+  title: reason.title!,
+  href: reasonHref(reason.slug!),
+  description: reason.description,
+  countLabel: storyCountLabel(reason.count),
+}))
 ---
 
 <PageLayout
   title="Journeys"
-  standfirst="Pick a part of the world, or pick the reason you want to leave. Both lead to the same archive from different directions, and both fill themselves as we publish."
+  standfirst="The German language has a word called ‘fernweh’ – a deep and restless longing to be far from home. If that sense of yearning sounds familiar to you, Journeys is where you will find your next adventure. Every destination guide, route, and itinerary here traces the same journey a young traveler on our team undertook, preserving all the lessons and detours that made it a real and memorable experience."
 >
-  <section class="axis axis--places">
-    <div class="axis-inner">
+  {
+    guides.length > 0 && (
+      <section class="guides">
+        <div class="guides-inner">
+          <SectionHead
+            title="Destination Guides"
+            note="Routes we have actually walked, hour by hour, with a map that follows you down the page."
+          />
+          <div class="guides-grid">
+            {guides.map((guide) => (
+              <ArticleCard article={guide} kickerAccent={false} />
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  <div class="axes">
+    <section class="axis axis--places">
       <SectionHead
         title="Places to go"
-        note="Six regions. Every Dispatch and Signal is filed under at least one."
+        note="Six regions, each as broad as curiosity needs it to be. Every Dispatch and Signal is filed under at least one."
       />
+
+      <RegionGlobe regions={globeRegions} />
 
       {
         placeRows.length > 0 ? (
-          <div class="grid grid--3">
+          <div class="grid grid--places">
             {placeRows.map((place) => (
               <TagCard
                 href={placeHref(place.slug!)}
@@ -71,55 +133,108 @@ const reasonRows = usable(reasons)
           />
         )
       }
-    </div>
-  </section>
+    </section>
 
-  <section class="axis axis--reasons">
-    <div class="axis-inner">
-      <SectionHead
-        title="Reasons to go"
-        note="The other axis: not where, but why."
-      />
+    <section class="axis axis--reasons">
+      <div class="axis-body">
+        <SectionHead title="Reasons to go" note="The other axis: not where, but why." />
 
-      {
-        reasonRows.length > 0 ? (
-          <div class="grid grid--4">
-            {reasonRows.map((reason) => (
-              <TagCard
-                href={reasonHref(reason.slug!)}
-                title={reason.title!}
-                description={reason.description}
-                count={reason.count}
-              />
-            ))}
-          </div>
-        ) : (
-          <EmptyState
-            title="Reasons are still being set up"
-            body="Reasons are written by the editors and added in the CMS. Once they exist, this row fills itself."
-          />
-        )
-      }
-    </div>
-  </section>
+        {
+          notebookEntries.length > 0 ? (
+            <ReasonNotebook entries={notebookEntries} />
+          ) : (
+            <EmptyState
+              title="Reasons are still being set up"
+              body="Reasons are written by the editors and added in the CMS. Once they exist, this row fills itself."
+            />
+          )
+        }
+      </div>
+    </section>
+  </div>
 </PageLayout>
 
 <style>
-  .axis-inner {
+  /*
+    The two axes as columns, side by side for the whole scroll, in equal
+    widths — the plain reading of the client's edit. A region and a reason are
+    two equally valid ways in, and the page says so by giving them the same
+    room. What separates them is the grid inside each column and the tint
+    behind Reasons, not their width.
+  */
+  /*
+    Guides open the page. Journeys is where a reader goes to be sent
+    somewhere, and a guide is the most direct answer to that — the two tag
+    axes below are the ways in when you do not already know where.
+  */
+  .guides-inner {
     max-width: 1400px;
     margin: 0 auto;
     padding: 0 var(--gutter);
   }
 
-  /* Places breathe — six cards, three up, descriptions in full. */
+  .guides {
+    padding-bottom: var(--space-24);
+  }
+
+  .guides-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-12) var(--space-8);
+  }
+
+  @media (max-width: 1000px) {
+    .guides-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 620px) {
+    .guides-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /*
+    Each column ends where its own content ends. Places is much the taller of
+    the two — six regions and a globe against four reasons — and stretching
+    the tinted panel to match it only produced a long empty box. A column that
+    finishes is not a column that ran out.
+  */
+  .axes {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-16);
+    align-items: start;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 var(--gutter);
+  }
+
   .axis--places {
     padding-bottom: var(--space-24);
   }
 
-  /* Reasons run tight and sit on the tinted band, so the axes don't twin. */
+  /* Reasons sit on the tinted panel, the same treatment the Signals column
+     gets on Stories. No contour pattern — see the note there. */
+  /*
+    The panel is pulled up by exactly its own top padding, so the drawn rule
+    inside it starts on the same line as the rule in the column beside it.
+
+    Without this the two rules sit --space-8 apart: the grid aligns the tops
+    of the two columns, and the left column's rule is its first pixel while
+    this one's is inset by the panel's padding. Lifting the box rather than
+    dropping the padding keeps the tint from crowding the rule.
+  */
   .axis--reasons {
-    padding: var(--space-16) 0 var(--space-24);
     background: var(--surface);
+    padding: var(--space-8) var(--space-8) var(--space-16);
+    margin-top: calc(-1 * var(--space-8));
+  }
+
+  .axis-body {
+    position: relative;
+    z-index: 1;
   }
 
   .grid {
@@ -127,26 +242,24 @@ const reasonRows = usable(reasons)
     gap: var(--space-12) var(--space-8);
   }
 
-  .grid--3 {
-    grid-template-columns: repeat(3, 1fr);
+  .grid--places {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .grid--4 {
-    grid-template-columns: repeat(4, 1fr);
-    gap: var(--space-8) var(--space-6);
-  }
-
-  @media (max-width: 1000px) {
-    .grid--3,
-    .grid--4 {
-      grid-template-columns: repeat(2, 1fr);
+  @media (max-width: 900px) {
+    .axes {
+      grid-template-columns: 1fr;
     }
   }
 
   @media (max-width: 620px) {
-    .grid--3,
-    .grid--4 {
+    .grid--places {
       grid-template-columns: 1fr;
+    }
+
+    .axis--reasons {
+      padding: var(--space-6) var(--space-6) var(--space-12);
+      margin-top: calc(-1 * var(--space-6));
     }
   }
 </style>

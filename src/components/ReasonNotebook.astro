@@ -1,0 +1,211 @@
+---
+// Reasons to go, built as a set of index dividers on a ruled page.
+//
+// The client asked for "a journal/notebook to select a reason." This is the
+// object rather than a picture of one: a page with a printed margin, four
+// dividers, and a named tab on each. Clicking a divider opens that reason,
+// the same as the card it replaces — nothing is hidden behind a state the
+// reader has to discover.
+//
+// The tabs step across the page so the four read as one stack rather than
+// four unrelated boxes. Every stroke is drawn with the same pen as the hand
+// rule and the hover underline; no icon pack, nothing bought.
+import Scribble from './Scribble.astro'
+import {
+  NOTEBOOK_MARGIN_PATH,
+  NOTEBOOK_MARGIN_VIEWBOX,
+  NOTEBOOK_TAB_PATH,
+  NOTEBOOK_TAB_VIEWBOX,
+} from '../lib/scribbles'
+
+export interface NotebookEntry {
+  title: string
+  href: string
+  description?: string | null
+  /** Already worded — "4 stories", "No stories yet". */
+  countLabel: string
+}
+
+interface Props {
+  entries: NotebookEntry[]
+}
+
+const {entries} = Astro.props
+
+// Four steps, then back to the start. A fifth reason begins the run again
+// rather than walking off the right edge of the page.
+const TAB_STEPS = [0, 1, 2, 3]
+---
+
+<div class="notebook">
+  <svg
+    class="notebook-margin"
+    viewBox={NOTEBOOK_MARGIN_VIEWBOX}
+    preserveAspectRatio="none"
+    fill="none"
+    aria-hidden="true"
+  >
+    <path d={NOTEBOOK_MARGIN_PATH} stroke-width="1.4" stroke-linecap="round"></path>
+  </svg>
+
+  <ol class="notebook-pages">
+    {
+      entries.map((entry, index) => (
+        <li class="page" style={`--tab-step: ${TAB_STEPS[index % TAB_STEPS.length]}`}>
+          <a class="page-link" href={entry.href} data-scribble>
+            <span class="page-tab">
+              <svg
+                class="page-tab-shape"
+                viewBox={NOTEBOOK_TAB_VIEWBOX}
+                preserveAspectRatio="none"
+                aria-hidden="true"
+              >
+                <path d={NOTEBOOK_TAB_PATH} stroke-width="1.5" stroke-linecap="round" />
+              </svg>
+              <span class="page-tab-text">
+                {entry.title}
+                <Scribble />
+              </span>
+            </span>
+
+            {entry.description && <p class="page-description">{entry.description}</p>}
+            <p class="page-count">{entry.countLabel}</p>
+          </a>
+        </li>
+      ))
+    }
+  </ol>
+</div>
+
+<style>
+  .notebook {
+    position: relative;
+    /* Room for the printed margin down the left. */
+    padding-left: var(--space-8);
+  }
+
+  .notebook-margin {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 16px;
+    height: 100%;
+    overflow: visible;
+  }
+
+  .notebook-margin path {
+    stroke: color-mix(in srgb, var(--accent) 45%, var(--surface));
+  }
+
+  .notebook-pages {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /*
+    Each divider is a page. The tab overlaps the divider rule above it, which
+    is what makes the two read as one drawn object rather than a rule with a
+    badge sitting on it.
+  */
+  .page {
+    position: relative;
+    padding-top: calc(var(--tab-height) + var(--space-6));
+    --tab-height: 46px;
+  }
+
+  .page + .page {
+    margin-top: var(--space-12);
+  }
+
+
+  .page-link {
+    display: block;
+    background-image: none;
+  }
+
+  .page-tab {
+    position: absolute;
+    top: 0;
+    /* Stepped across the page so the four read as a stack of dividers. */
+    left: calc(var(--tab-step) * var(--space-8));
+    display: inline-flex;
+    align-items: center;
+    height: var(--tab-height);
+    /*
+      Sized to its own label, like a real set of dividers, where the tab is as
+      wide as the word written on it. The padding has to clear the two slanted
+      shoulders as well as give the label air — at the height the label sits
+      the shape has already leaned in by about a third of a shoulder's width.
+    */
+    padding: 0 var(--space-8);
+  }
+
+  /*
+    The shape is behind the label and filled with the panel colour, so it
+    covers the stretch of divider rule it sits on. Stroke and fill are one
+    path; there is no separate box.
+  */
+  .page-tab-shape {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    fill: var(--surface);
+    stroke: var(--fg);
+  }
+
+  .page-tab-text {
+    position: relative;
+    /* The tab is open at the bottom, so its optical centre sits above the
+       box's. Without this the label reads as low in the shape. */
+    top: -1px;
+    font-family: var(--font-serif);
+    font-size: var(--text-base);
+    font-weight: 500;
+    line-height: 1;
+    color: var(--fg);
+    white-space: nowrap;
+    --scribble-height: 0.6em;
+    --scribble-drop: -0.24em;
+  }
+
+  /* The divider rule the tab sits on, drawn as a plain hairline: this one is
+     structural rather than a section opening, and twenty-two hand rules on a
+     page would stop reading as handwriting. */
+  .page::before {
+    content: '';
+    position: absolute;
+    top: calc(var(--tab-height) - 1px);
+    right: 0;
+    left: 0;
+    border-top: 1px solid var(--fg);
+  }
+
+  .page-description {
+    max-width: var(--measure);
+    margin: 0 0 var(--space-3);
+    font-family: var(--font-serif);
+    font-size: var(--text-base);
+    line-height: 1.5;
+    color: var(--muted);
+  }
+
+  .page-count {
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    color: var(--muted);
+  }
+
+  @media (max-width: 620px) {
+    .notebook {
+      padding-left: var(--space-6);
+    }
+
+    /* The steps are what overflow first on a narrow page, so they go. */
+    .page-tab {
+      left: 0;
+    }
+  }
+</style>

@@ -1,0 +1,356 @@
+---
+// The Journeys globe: six regions on a paper-coloured sphere, drag to turn,
+// click a region to read what is filed under it.
+//
+// The client asked for "an interactive globe to select a region." This is
+// that, with three deliberate constraints.
+//
+// It is never the only way in. The six region cards render underneath it,
+// server-side, in every browser — a reader on a phone, on a slow connection,
+// with a screen reader, or with JavaScript off sees the same six choices with
+// the same descriptions and counts. The globe is aria-hidden for exactly that
+// reason: it duplicates a list that is already announced properly, and a
+// canvas nobody can tab into should not pretend otherwise.
+//
+// It turns slowly on its own, at the client's direction, and stops the moment
+// the pointer is over it — so a region is never a moving target and the reader
+// takes the wheel just by reaching for it. Under prefers-reduced-motion the
+// globe does not mount at all, so no one gets the rotation who asked not to.
+//
+// It costs 1 MB of JavaScript, so it is loaded from a separate file, only
+// when a wide screen scrolls it into view, and never at all otherwise. See
+// docs/via-design.md.
+import {isGlobeRegion, type GlobeRegion} from '../lib/globe'
+
+interface Props {
+  regions: GlobeRegion[]
+}
+
+const {regions} = Astro.props
+
+// A region Sanity has no colour for cannot be drawn on the globe, and one the
+// globe has no shape for cannot be clicked. Both are dropped rather than
+// rendered as a hole in the map.
+const drawable = regions.filter((region) => isGlobeRegion(region.color))
+---
+
+{
+  drawable.length > 0 && (
+    <div class="globe" data-globe>
+      <div class="globe-stage" data-globe-stage aria-hidden="true" />
+      <p class="globe-caption" data-globe-caption aria-hidden="true">
+        Drag to turn the globe. Click a region to read it.
+      </p>
+
+      {/* The six resting and hover colours, resolved out of tokens.css by the
+          script below. Kept in the markup so no colour is ever written in
+          JavaScript. */}
+      <span class="globe-swatches" data-globe-swatches aria-hidden="true" />
+
+      <script type="application/json" data-globe-regions set:html={JSON.stringify(drawable)} />
+    </div>
+  )
+}
+
+<style>
+  /*
+    Region colours for the globe, mixed down from the tag palette so six
+    saturated fills do not turn a quiet page into a pie chart. Full strength
+    is reserved for the region under the cursor — the same discipline the
+    accent budget follows everywhere else.
+
+    These are custom properties rather than values in the script because
+    tokens.css is the only place a colour is allowed to be written. The
+    script reads them back off a probe element at run time.
+  */
+  .globe {
+    --globe-stroke: color-mix(in srgb, var(--fg) 18%, var(--globe-ocean));
+
+    --globe-neutral-rest: var(--globe-land);
+    --globe-neutral-live: var(--globe-land);
+
+    --globe-europe-rest: color-mix(in srgb, var(--tag-europe) 55%, var(--globe-land));
+    --globe-europe-live: var(--tag-europe);
+    --globe-asia-rest: color-mix(in srgb, var(--tag-asia) 55%, var(--globe-land));
+    --globe-asia-live: var(--tag-asia);
+    --globe-americas-rest: color-mix(in srgb, var(--tag-americas) 55%, var(--globe-land));
+    --globe-americas-live: var(--tag-americas);
+    --globe-africa-rest: color-mix(in srgb, var(--tag-africa) 55%, var(--globe-land));
+    --globe-africa-live: var(--tag-africa);
+    --globe-oceania-rest: color-mix(in srgb, var(--tag-oceania) 55%, var(--globe-land));
+    --globe-oceania-live: var(--tag-oceania);
+    --globe-mideast-rest: color-mix(in srgb, var(--tag-mideast) 55%, var(--globe-land));
+    --globe-mideast-live: var(--tag-mideast);
+
+    /*
+      Hidden until the script has a globe to show. Nothing on the page depends
+      on it, so a browser that cannot run it, or a reader who has asked for
+      less motion, simply gets the region cards a little sooner.
+    */
+    display: none;
+    margin-bottom: var(--space-12);
+  }
+
+  /*
+    Two states, not one. A globe cannot be built inside a display:none box —
+    it would measure its stage as zero pixels wide — so the script lays the
+    element out first and only fades it in once there is something to see.
+  */
+  .globe[data-globe-mounting] {
+    display: block;
+    opacity: 0;
+  }
+
+  .globe[data-globe-ready] {
+    opacity: 1;
+    transition: opacity 400ms ease-out;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .globe[data-globe-ready] {
+      transition: none;
+    }
+  }
+
+  /* If the window is dragged narrow after the globe has mounted, it leaves
+     again — one column has no room for it. */
+  @media (max-width: 999px) {
+    .globe[data-globe-mounting],
+    .globe[data-globe-ready] {
+      display: none;
+    }
+  }
+
+  .globe-stage {
+    width: 100%;
+    max-width: 520px;
+    margin: 0 auto;
+    aspect-ratio: 1;
+    cursor: grab;
+  }
+
+  .globe-stage:active {
+    cursor: grabbing;
+  }
+
+  /*
+    One caption line rather than a tooltip that follows the cursor. It says
+    what to do until the reader hovers a region, then says which region that
+    is and how much is in it — so the globe never asks you to guess what you
+    are about to click.
+  */
+  .globe-caption {
+    margin: var(--space-4) 0 0;
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    color: var(--muted);
+    text-align: center;
+    /* Holds its line so the row under the globe does not jump on hover. */
+    min-height: 1.4em;
+  }
+
+  .globe-caption[data-globe-live] {
+    color: var(--fg);
+  }
+
+  .globe-swatches {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+  }
+</style>
+
+<script>
+  import {GLOBE_REGIONS, isGlobeRegion, type GlobeRegion} from '../lib/globe'
+
+  /** Slow enough to read as drift rather than a carousel: a full turn takes about a minute. */
+  const AUTO_ROTATE = true
+  const AUTO_ROTATE_SPEED = 0.35
+
+  /** Below this the globe is not worth a megabyte, and the column is one card wide anyway. */
+  const MIN_WIDTH = 1000
+
+  const host = document.querySelector<HTMLElement>('[data-globe]')
+
+  function hasWebGL() {
+    try {
+      const canvas = document.createElement('canvas')
+      return Boolean(canvas.getContext('webgl2') ?? canvas.getContext('webgl'))
+    } catch {
+      return false
+    }
+  }
+
+  function shouldMount() {
+    if (!host) return false
+    if (!window.matchMedia(`(min-width: ${MIN_WIDTH}px)`).matches) return false
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false
+    return hasWebGL()
+  }
+
+  async function mount(host: HTMLElement) {
+    const stage = host.querySelector<HTMLElement>('[data-globe-stage]')
+    const caption = host.querySelector<HTMLElement>('[data-globe-caption]')
+    const swatches = host.querySelector<HTMLElement>('[data-globe-swatches]')
+    const payload = host.querySelector<HTMLElement>('[data-globe-regions]')
+    if (!stage || !caption || !swatches || !payload) return
+
+    // Laid out, but still invisible: everything below needs real pixel widths
+    // and resolved colours, and neither exists inside a display:none box.
+    host.setAttribute('data-globe-mounting', '')
+
+    const regions: GlobeRegion[] = JSON.parse(payload.textContent ?? '[]')
+    const byRegion = new Map(regions.map((region) => [region.color, region]))
+
+    /*
+      Resolves a custom property to something three.js can parse.
+
+      Two steps, both necessary. Setting the property as an inline `color` and
+      reading the computed value is what resolves `color-mix(...)` at all — a
+      custom property read on its own comes back as the unresolved text it was
+      written as. But a browser hands a mixed colour back in CSS Color 4 form,
+      `color(srgb 0.44 0.67 0.92)`, and three.js does not parse that syntax: it
+      warns and leaves the surface its default colour, which is how you end up
+      with a blank sphere. So the srgb form is converted to plain rgb here.
+    */
+    const toRgb = (value: string) => {
+      const srgb = value.match(/^color\(srgb\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)/)
+      if (!srgb) return value
+      const channels = srgb.slice(1, 4).map((channel) => Math.round(Number(channel) * 255))
+      return `rgb(${channels.join(', ')})`
+    }
+
+    const resolve = (name: string) => {
+      swatches.style.color = `var(${name})`
+      return toRgb(getComputedStyle(swatches).color)
+    }
+
+    const palette = new Map<string, {rest: string; live: string}>()
+    for (const region of [...GLOBE_REGIONS, 'neutral']) {
+      palette.set(region, {rest: resolve(`--globe-${region}-rest`), live: resolve(`--globe-${region}-live`)})
+    }
+    const stroke = resolve('--globe-stroke')
+    const ocean = resolve('--globe-ocean')
+
+    const [{default: Globe}, geo] = await Promise.all([
+      import('globe.gl'),
+      fetch('/regions.geo.json').then((response) => response.json()),
+    ])
+
+    const features = geo.features as Array<{properties: {region: string; title: string | null}}>
+
+    const colorOf = (feature: (typeof features)[number], hovered: unknown) =>
+      (palette.get(feature.properties.region) ?? palette.get('neutral')!)[feature === hovered ? 'live' : 'rest']
+
+    const linkFor = (feature: (typeof features)[number]) =>
+      isGlobeRegion(feature.properties.region) ? byRegion.get(feature.properties.region) : undefined
+
+    const size = () => Math.round(stage.getBoundingClientRect().width)
+
+    const world = new Globe(stage, {animateIn: false, rendererConfig: {antialias: true, alpha: true}})
+      .backgroundColor('rgba(0,0,0,0)')
+      .showAtmosphere(false)
+      .width(size())
+      .height(size())
+      .polygonsData(features)
+      .polygonSideColor(() => 'rgba(0,0,0,0)')
+      .polygonStrokeColor(() => stroke)
+      .polygonsTransitionDuration(220)
+
+    // A sphere the colour of the page rather than a photograph of the Earth.
+    const material = world.globeMaterial() as {color: {set: (value: string) => void}; shininess?: number}
+    material.color.set(ocean)
+    material.shininess = 0
+
+    const draw = (hovered: unknown) => {
+      world
+        .polygonCapColor((feature: unknown) => colorOf(feature as (typeof features)[number], hovered))
+        .polygonAltitude((feature: unknown) => {
+          const typed = feature as (typeof features)[number]
+          if (typed === hovered) return 0.05
+          return typed.properties.region === 'neutral' ? 0.006 : 0.014
+        })
+    }
+
+    draw(null)
+
+    const hint = caption.textContent ?? ''
+
+    world
+      .onPolygonHover((feature: unknown) => {
+        const link = feature ? linkFor(feature as (typeof features)[number]) : undefined
+        draw(link ? feature : null)
+        stage.style.cursor = link ? 'pointer' : ''
+        if (link) {
+          caption.textContent = `${link.title} — ${link.countLabel}`
+          caption.setAttribute('data-globe-live', '')
+        } else {
+          caption.textContent = hint
+          caption.removeAttribute('data-globe-live')
+        }
+      })
+      .onPolygonClick((feature: unknown) => {
+        const link = linkFor(feature as (typeof features)[number])
+        if (link) window.location.href = link.href
+      })
+
+    // Turned far enough west that the Americas are not edge-on, and close
+    // enough that the sphere fills the frame it was given.
+    world.pointOfView({lat: 18, lng: -20, altitude: 1.6})
+
+    const controls = world.controls()
+    controls.enableZoom = false
+    controls.enablePan = false
+    controls.autoRotate = AUTO_ROTATE
+    controls.autoRotateSpeed = AUTO_ROTATE_SPEED
+
+    // Hand it over the moment the reader reaches for it. Clicking a region on
+    // a globe that is still turning means aiming ahead of it, and letting go
+    // of the drift is the clearest way to say the globe is theirs now.
+    if (AUTO_ROTATE) {
+      stage.addEventListener('pointerenter', () => {
+        controls.autoRotate = false
+      })
+      stage.addEventListener('pointerleave', () => {
+        controls.autoRotate = true
+      })
+    }
+
+    host.setAttribute('data-globe-ready', '')
+
+    new ResizeObserver(() => {
+      const next = size()
+      if (next > 0) world.width(next).height(next)
+    }).observe(stage)
+
+    // Nothing is worth rendering sixty times a second while it is off screen.
+    // These two are real methods on the instance but are left out of globe.gl's
+    // typings, which is what the cast is for.
+    const loop = world as unknown as {pauseAnimation(): void; resumeAnimation(): void}
+    new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) loop.resumeAnimation()
+        else loop.pauseAnimation()
+      }
+    }).observe(stage)
+  }
+
+  if (host && shouldMount()) {
+    // Nothing downloads until the globe is nearly on screen.
+    const watcher = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return
+        watcher.disconnect()
+        mount(host).catch(() => {
+          // A globe that failed to load is not an error a reader needs to see.
+          // The region cards under it are the page.
+          host.removeAttribute('data-globe-mounting')
+          host.removeAttribute('data-globe-ready')
+        })
+      },
+      {rootMargin: '400px'},
+    )
+    watcher.observe(host.parentElement ?? host)
+  }
+</script>
