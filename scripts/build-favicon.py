@@ -29,8 +29,12 @@ LOGO = REPO / 'public' / 'vialogo.svg'
 TOKENS = REPO / 'src' / 'styles' / 'tokens.css'
 
 # How much of the square the wordmark is allowed to fill. A tab icon needs a
-# margin or the letterforms run into the browser's own chrome.
-INSET = 0.12
+# margin or the letterforms run into the browser's own chrome — but the
+# wordmark is about three times as wide as it is tall, so it fits by width and
+# leaves the rest of the tile empty either way. Kept tight for that reason: at
+# 16px the stroke is thin enough that any width given away reads as a faint
+# smudge rather than as a word.
+INSET = 0.06
 ICO_SIZES = [(16, 16), (32, 32), (48, 48), (64, 64)]
 
 
