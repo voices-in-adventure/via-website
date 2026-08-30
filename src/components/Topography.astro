@@ -1,0 +1,88 @@
+---
+// The topographic contour pattern, laid behind a section's plain background.
+//
+// The client asked for this to run under plain backgrounds "wherever (and to
+// the extent) you feel appropriate", in light blue or light grey. It is the
+// site's one piece of decorative texture, so it is deliberately faint: at
+// full strength a contour field competes with the photography, which
+// via-design.md is explicit carries the page.
+//
+// How to use it: give the section `position: relative`, drop this in as its
+// first child, and make sure the section's own content establishes a stacking
+// context above it (the pattern sits at z-index 0, so content needs
+// `position: relative`).
+//
+// The artwork is public/topography.svg, drawn by scripts/build-topography.py.
+// It is applied as a MASK over a token-coloured surface rather than as a
+// background image — the same technique Nav.astro uses for the wordmark — so
+// its colour still comes from tokens.css and a palette change stays a
+// one-file edit.
+
+interface Props {
+  /**
+   * Which of the two tones the client asked for. Grey is the quieter of the
+   * two and the safer default under body copy; blue carries more of the
+   * brand and suits a section that is mostly display type.
+   */
+  tone?: 'grey' | 'blue'
+  /** Scales the tile. Larger reads as landscape, smaller as texture. */
+  scale?: number
+}
+
+const {tone = 'grey', scale = 1} = Astro.props
+---
+
+<div
+  class:list={['topography', `topography--${tone}`]}
+  style={scale === 1 ? undefined : `--topo-tile: ${Math.round(1200 * scale)}px`}
+  aria-hidden="true"
+>
+</div>
+
+<style>
+  .topography {
+    --topo-tile: 1200px;
+
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+
+    -webkit-mask-image: url('/topography.svg');
+    mask-image: url('/topography.svg');
+    -webkit-mask-size: var(--topo-tile) auto;
+    mask-size: var(--topo-tile) auto;
+    -webkit-mask-repeat: repeat;
+    mask-repeat: repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+  }
+
+  /*
+    Both tones are mixed from existing tokens rather than being new colours.
+    The percentages are low on purpose: the contour lines are hairlines, so
+    even at these strengths they cover only a few percent of the surface and
+    take almost nothing off the contrast of type sitting on top. Anything
+    heavier stops being a ground and starts being a pattern you have to read
+    around.
+  */
+  .topography--grey {
+    background-color: color-mix(in srgb, var(--fg) 10%, transparent);
+  }
+
+  .topography--blue {
+    background-color: color-mix(in srgb, var(--accent) 16%, transparent);
+  }
+
+  /*
+    A contour field drawn at hairline weight shimmers on a low-resolution
+    display when it is scaled down. Nudging the tile up on coarse pointers —
+    which is a decent proxy for phones — keeps the lines far enough apart to
+    stay clean.
+  */
+  @media (pointer: coarse) {
+    .topography {
+      --topo-tile: 1600px;
+    }
+  }
+</style>

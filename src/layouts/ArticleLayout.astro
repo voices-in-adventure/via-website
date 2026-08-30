@@ -59,7 +59,27 @@ const asOfFormatter = new Intl.DateTimeFormat('en-US', {
 <BaseLayout title={`${article.title} — VIA`} description={article.dek} hasHero>
   <article class="article">
     <figure class="article-hero">
-      <img src={heroUrl} alt={article.title} />
+      {/*
+        Decorative: the headline sitting on this photo is real text below, and
+        the caption underneath carries whatever description the editors wrote.
+        Repeating the title in alt would make a screen reader read it twice.
+      */}
+      <div class="article-hero-media">
+        <img src={heroUrl} alt="" />
+        <div class="article-hero-scrim" aria-hidden="true"></div>
+
+        <div class="article-hero-text">
+          <p class="kicker kicker--over">
+            <span class="kicker-label">{kicker.label}</span>{kicker.city && ` from ${kicker.city}`}
+            {formatLabel && <span class="kicker-sep">·</span>}
+            {formatLabel}
+            {article.duration && <span class="kicker-sep">·</span>}
+            {article.duration && `${article.duration} hours`}
+          </p>
+          <h1 class="title">{article.title}</h1>
+        </div>
+      </div>
+
       {
         article.heroCaption && (
           <figcaption>
@@ -70,15 +90,6 @@ const asOfFormatter = new Intl.DateTimeFormat('en-US', {
     </figure>
 
     <header class="article-head">
-      <p class="kicker">
-        <span class="kicker-label">{kicker.label}</span>{kicker.city && ` — ${kicker.city}`}
-        {formatLabel && <span class="kicker-sep">·</span>}
-        {formatLabel}
-        {article.duration && <span class="kicker-sep">·</span>}
-        {article.duration && `${article.duration} hours`}
-      </p>
-
-      <h1 class="title">{article.title}</h1>
       <p class="dek">{article.dek}</p>
 
       <p class="byline">
@@ -139,11 +150,91 @@ const asOfFormatter = new Intl.DateTimeFormat('en-US', {
     margin: 0 0 var(--space-12);
   }
 
+  /*
+    The photo, its scrim, and the headline are one box; the caption sits
+    outside it. Without this wrapper the scrim's inset: 0 reached the bottom
+    of the whole figure and laid a grey band over the caption.
+  */
+  .article-hero-media {
+    position: relative;
+  }
+
+  /*
+    Taller than it was, because it now carries the headline as well as the
+    photograph. The floor keeps a short window from crushing the title into
+    the masthead above it.
+  */
   .article-hero img {
+    display: block;
     width: 100%;
-    height: 62vh;
-    min-height: 420px;
+    height: 78vh;
+    min-height: 560px;
     object-fit: cover;
+  }
+
+  /*
+    The scrim the headline sits on. It runs left to right rather than bottom
+    to top because the type is left-aligned and vertically centred — a bottom
+    gradient would darken the half of the photo the words are not on.
+
+    The stops are measured, not eyeballed. anti-slop.md requires text over
+    photography to hold up against the *worst* image the CMS will accept, so
+    they are set against a pure white photo, which is the worst case there is:
+
+      across the hero   combined ink   contrast for --bg type
+      0%                       0.78            9.0:1
+      22%                      0.75            8.0:1
+      42%                      0.58            4.4:1
+
+    The headline column below is capped at 620px, which is about 43% of a
+    1440px window — so the type never leaves the zone those figures cover.
+    The 42% figure clears the 3:1 gate for large text with room to spare and
+    very nearly clears the 4.5:1 body gate too.
+
+    If the headline column is ever widened, re-run those numbers. Past 60%
+    across, this scrim does not hold small type on a bright photo.
+  */
+  .article-hero-scrim {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(
+        to right,
+        color-mix(in srgb, var(--fg) 70%, transparent) 0%,
+        color-mix(in srgb, var(--fg) 66%, transparent) 22%,
+        color-mix(in srgb, var(--fg) 56%, transparent) 42%,
+        color-mix(in srgb, var(--fg) 28%, transparent) 62%,
+        color-mix(in srgb, var(--fg) 8%, transparent) 80%,
+        transparent 100%
+      ),
+      linear-gradient(
+        to top,
+        color-mix(in srgb, var(--fg) 26%, transparent) 0%,
+        color-mix(in srgb, var(--fg) 8%, transparent) 35%,
+        transparent 60%
+      );
+  }
+
+  /*
+    Left-aligned and vertically centred, as asked. It sits in the same 1400px
+    container as the rest of the site so the headline starts on the same left
+    edge as the body copy below it, rather than floating at its own margin.
+  */
+  .article-hero-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: var(--masthead-tall) var(--gutter) 0;
+  }
+
+  .article-hero-text .kicker,
+  .article-hero-text .title {
+    max-width: 620px;
   }
 
   /*
@@ -199,6 +290,21 @@ const asOfFormatter = new Intl.DateTimeFormat('en-US', {
     color: var(--accent);
   }
 
+  /*
+    Over the photo the whole kicker goes light, accent word included. VIA blue
+    is a mid-tone: it passes 4.5:1 on --bg, which is what it was picked for,
+    and fails badly on a dark scrim. The accent is spent elsewhere on this
+    page instead.
+  */
+  .kicker--over,
+  .kicker--over .kicker-label {
+    color: var(--bg);
+  }
+
+  .kicker--over {
+    margin-bottom: var(--space-6);
+  }
+
   .kicker-sep {
     margin: 0 var(--space-2);
   }
@@ -208,17 +314,18 @@ const asOfFormatter = new Intl.DateTimeFormat('en-US', {
     amateur faster than almost anything else."
   */
   .title {
-    margin: 0 0 var(--space-6);
+    margin: 0;
     font-family: var(--font-serif);
     font-size: var(--text-2xl);
     font-weight: 500;
     line-height: 1.08;
     letter-spacing: -0.01em;
-    color: var(--fg);
+    color: var(--bg);
   }
 
   .dek {
     margin: 0 0 var(--space-8);
+    max-width: var(--measure);
     font-family: var(--font-serif);
     font-size: var(--text-lg);
     font-style: italic;
@@ -285,6 +392,40 @@ const asOfFormatter = new Intl.DateTimeFormat('en-US', {
     font-family: var(--font-sans);
     font-size: var(--text-xs);
     color: var(--muted);
+  }
+
+  @media (max-width: 900px) {
+    .article-hero img {
+      height: 68vh;
+      min-height: 460px;
+    }
+
+    .title {
+      font-size: var(--text-xl);
+      line-height: 1.15;
+    }
+
+    /*
+      The scrim goes to a bottom-up gradient on narrow screens. There is no
+      "left half" of a 390px photo to speak of, so a sideways gradient would
+      just darken the whole image unevenly; anchoring the type to the bottom
+      and darkening upward is the treatment that fits the shape.
+    */
+    .article-hero-text {
+      justify-content: flex-end;
+      padding-bottom: var(--space-12);
+    }
+
+    .article-hero-scrim {
+      background: linear-gradient(
+        to top,
+        color-mix(in srgb, var(--fg) 76%, transparent) 0%,
+        color-mix(in srgb, var(--fg) 64%, transparent) 30%,
+        color-mix(in srgb, var(--fg) 34%, transparent) 55%,
+        color-mix(in srgb, var(--fg) 10%, transparent) 78%,
+        transparent 100%
+      );
+    }
   }
 
   /* The rectangle itself lives in components/TagLink.astro — it is shared

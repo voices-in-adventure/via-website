@@ -10,6 +10,7 @@
 // accent uses per screen, so a page should carry at most a couple of these
 // and let everything else sit in --fg and --muted.
 import Scribble from './Scribble.astro'
+import HandRule from './HandRule.astro'
 
 interface Props {
   title: string
@@ -25,38 +26,48 @@ const {title, note, actionLabel, actionHref, actionExternal = false} = Astro.pro
 ---
 
 <div class="section-head">
-  <div class="section-head-main">
+  <HandRule />
+
+  <div class="section-head-row">
+    <div class="section-head-main">
     <h2 class="section-head-title">{title}</h2>
     {note && <p class="section-head-note">{note}</p>}
   </div>
 
-  {
-    actionHref && actionLabel && (
-      <a
-        class="section-head-action"
-        href={actionHref}
-        target={actionExternal ? '_blank' : undefined}
-        rel={actionExternal ? 'noopener noreferrer' : undefined}
-        data-scribble
-      >
-        <span class="section-head-action-text">
-          {actionLabel}
-          <Scribble />
-        </span>
-      </a>
-    )
-  }
+    {
+      actionHref && actionLabel && (
+        <a
+          class="section-head-action"
+          href={actionHref}
+          target={actionExternal ? '_blank' : undefined}
+          rel={actionExternal ? 'noopener noreferrer' : undefined}
+          data-scribble
+        >
+          <span class="section-head-action-text">
+            {actionLabel}
+            <Scribble />
+          </span>
+        </a>
+      )
+    }
+  </div>
 </div>
 
 <style>
+  /*
+    The rule is now a drawn stroke sitting above the row rather than a border
+    on it — see HandRule.astro. Everything else about the head is unchanged.
+  */
   .section-head {
+    margin-bottom: var(--space-8);
+  }
+
+  .section-head-row {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
     gap: var(--space-8);
-    margin-bottom: var(--space-8);
     padding-top: var(--space-4);
-    border-top: 1px solid var(--fg);
   }
 
   .section-head-main {
@@ -94,6 +105,6 @@ const {title, note, actionLabel, actionHref, actionExternal = false} = Astro.pro
     position: relative;
     display: inline-block;
     --scribble-height: 0.6em;
-    --scribble-drop: -0.15em;
+    --scribble-drop: -0.03em;
   }
 </style>

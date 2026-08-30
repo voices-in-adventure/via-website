@@ -1,0 +1,92 @@
+---
+// The rule that opens a section: a hand-drawn stroke rather than a 1px
+// border, which traces itself across the page as the reader scrolls it into
+// view.
+//
+// This is the client's "take the line motif beyond an underline" request. It
+// is deliberately answered as a *system* change rather than a new decorative
+// element: every SectionHead on the site now draws this instead of a
+// hairline, so the same pen that drew the wordmark and draws the hover
+// underline is also what divides the page. Nothing new floats or bobs, which
+// anti-slop.md rules out.
+//
+// The motion is scroll-driven, never timed — the same rule the homepage hero
+// drift follows: it only moves because the reader moved.
+//
+// It is fully drawn by default. The animation is opt-in behind @supports and
+// prefers-reduced-motion, so a browser without scroll-driven animation gets a
+// finished rule rather than an invisible one. A section divider that never
+// appears is a missing divider, not a missing flourish.
+import {HAND_RULE_PATH, HAND_RULE_VIEWBOX} from '../lib/scribbles'
+
+interface Props {
+  /** `strong` is the near-black rule over a section heading; `hairline` is the quieter one. */
+  weight?: 'strong' | 'hairline'
+}
+
+const {weight = 'strong'} = Astro.props
+---
+
+<svg
+  class:list={['hand-rule', `hand-rule--${weight}`]}
+  viewBox={HAND_RULE_VIEWBOX}
+  preserveAspectRatio="none"
+  fill="none"
+  aria-hidden="true"
+>
+  <path d={HAND_RULE_PATH} pathLength="1" stroke-width="1.6" stroke-linecap="round"></path>
+</svg>
+
+<style>
+  .hand-rule {
+    display: block;
+    width: 100%;
+    /* Tall enough for the stroke's own wander plus its round caps. The line
+       reads as a rule, so it takes no more vertical room than one would. */
+    height: 8px;
+    overflow: visible;
+  }
+
+  .hand-rule--strong path {
+    stroke: var(--fg);
+  }
+
+  .hand-rule--hairline path {
+    stroke: var(--border);
+  }
+
+  /*
+    Drawn, and staying drawn, unless the browser can animate it on scroll.
+  */
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .hand-rule path {
+        /* The gap is longer than the dash for the reason Scribble.astro
+           documents: with a repeating "1 1" pattern the next dash begins
+           exactly where the path ends, and a round cap draws that
+           zero-length segment as a stray dot. A gap of 2 puts it out of
+           reach. */
+        stroke-dasharray: 1 2;
+        stroke-dashoffset: 1;
+        animation: hand-rule-draw linear both;
+        animation-timeline: view();
+        /*
+          Draws across the last stretch of the rule's approach and finishes
+          well before it leaves — so it is complete by the time a reader has
+          it comfortably on screen, rather than still drawing while they read
+          the heading under it.
+        */
+        animation-range: entry 15% cover 32%;
+      }
+    }
+  }
+
+  @keyframes hand-rule-draw {
+    from {
+      stroke-dashoffset: 1;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+</style>

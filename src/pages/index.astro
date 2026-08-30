@@ -3,6 +3,8 @@ import BaseLayout from '../layouts/BaseLayout.astro'
 import WorldClockTicker from '../components/WorldClockTicker.astro'
 import ArticleCard from '../components/ArticleCard.astro'
 import SectionHead from '../components/SectionHead.astro'
+import Topography from '../components/Topography.astro'
+import PhotoMontage from '../components/PhotoMontage.astro'
 import {sanityClient, urlFor} from '../lib/sanity'
 import {
   FEATURED_ARTICLES,
@@ -16,11 +18,35 @@ interface SiteSettings {
   heroImage?: SanityImageSource
   heroVideoUrl?: string
   missionStatement?: string
+  heroLines?: string[]
+  homeIntro?: string[]
 }
 
 const siteSettings = await sanityClient.fetch<SiteSettings | null>(
-  `*[_type == "siteSettings"][0]{heroType, heroImage, heroVideoUrl, missionStatement}`,
+  `*[_type == "siteSettings"][0]{
+    heroType, heroImage, heroVideoUrl, missionStatement, heroLines, homeIntro
+  }`,
 )
+
+/*
+  The hero copy, in the order the editors set it. The first line is the
+  tagline — short, and set apart — and everything after it reads as one
+  paragraph of mission beneath.
+
+  Nothing here fades or staggers in. The client's copy is headed "appear in
+  order", and order down the page is what that gets: anti-slop.md rules out
+  hiding content behind an entrance animation, and the first thing a reader
+  sees on the site is the last place to make words wait for a script.
+*/
+const homeIntro = (siteSettings?.homeIntro ?? []).map((line) => line.trim()).filter(Boolean)
+
+const heroLines = (siteSettings?.heroLines ?? []).map((line) => line.trim()).filter(Boolean)
+const [heroTagline, ...heroMission] =
+  heroLines.length > 0
+    ? heroLines
+    : siteSettings?.missionStatement
+      ? [null, siteSettings.missionStatement]
+      : []
 
 /*
   The front page is built out of two ordered lists and nothing else.
@@ -45,17 +71,22 @@ const rail = featured.slice(3, 7)
 const shown = new Set([lead, ...flank, ...rail].filter(Boolean).map((a) => a!.slug))
 const river = latest.filter((a) => !shown.has(a.slug)).slice(0, 10)
 
-// Homepage ticker: the cities of the three most recent published Dispatches
-// — never a hardcoded list. See docs/content-model.md, "Homepage ticker."
-// Held to three because the ticker is laid out to spread three items across
-// the hero's bottom edge; every Dispatch city at once crowds it and stops
-// reading as a wall of clocks. Fetching more than three and slicing after
-// leaves room for repeated cities to collapse without coming up short.
+// Homepage ticker: the cities of the most recent published Dispatches —
+// never a hardcoded list. See docs/content-model.md, "Homepage ticker."
+//
+// Three. It briefly ran to six, which is what the client's edit round asked
+// for, and was reverted with the rest of the front page at the owner's
+// direction. Three items spread across the hero's bottom edge land left,
+// centre and right; six read as a crowded row of clocks. Fetching more than
+// three and slicing after leaves room for repeated cities to collapse
+// without coming up short.
+const TICKER_CITY_COUNT = 3
+
 const dispatchCities = await sanityClient.fetch<string[]>(
   `*[_type == "dispatch" && publishedAt <= now() && defined(city) && city != ""]
-    | order(publishedAt desc)[0...12].city`,
+    | order(publishedAt desc)[0...24].city`,
 )
-const tickerCities = [...new Set(dispatchCities)].slice(0, 3)
+const tickerCities = [...new Set(dispatchCities)].slice(0, TICKER_CITY_COUNT)
 
 /*
   The hero photo, in order of preference:
@@ -94,99 +125,21 @@ const HOUSE_HEROES = [
         sanityHeroUrl ? (
           <img class="hero-media" src={sanityHeroUrl} alt="" />
         ) : (
-          <>
-            {/*
-              Two stacked layers crossfade into each other. They're divs with
-              a background-image (set by script below), not <img> tags, so
-              nothing loads until the script decides it's needed — loading
-              all eight photos eagerly on every visit would be wasteful for
-              an ambient background effect.
-            */}
-            <div class="hero-media-layer" id="hero-layer-a"></div>
-            <div class="hero-media-layer" id="hero-layer-b"></div>
-            <script is:inline define:vars={{photos: HOUSE_HEROES}}>
-              ;(function () {
-                var layerA = document.getElementById('hero-layer-a')
-                var layerB = document.getElementById('hero-layer-b')
-                if (!layerA || !layerB || !photos || photos.length === 0) return
-
-                // Slow and ambient on purpose — this is a backdrop, not a
-                // carousel. No arrows, no dots, no manual control; it just
-                // drifts through the set on its own while the tab is open.
-                var HOLD_MS = 9000
-
-                function shuffle(list) {
-                  var copy = list.slice()
-                  for (var i = copy.length - 1; i > 0; i--) {
-                    var j = Math.floor(Math.random() * (i + 1))
-                    var tmp = copy[i]
-                    copy[i] = copy[j]
-                    copy[j] = tmp
-                  }
-                  return copy
-                }
-
-                function setBackground(layer, photo) {
-                  layer.style.backgroundImage = 'url(' + photo.src + ')'
-                  layer.style.backgroundPosition = photo.position
-                }
-
-                var queue = shuffle(photos)
-                var pos = 0
-                var active = layerA
-                var inactive = layerB
-
-                // First paint shows immediately — no fade-in from blank.
-                active.style.transition = 'none'
-                setBackground(active, queue[pos])
-                active.classList.add('is-active')
-                void active.offsetHeight
-                active.style.transition = ''
-
-                var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-                if (reduceMotion || photos.length < 2) return
-
-                function preload(photo, onDone) {
-                  var img = new Image()
-                  img.onload = onDone
-                  img.onerror = onDone
-                  img.src = photo.src
-                }
-
-                function advance() {
-                  pos = pos + 1
-                  if (pos >= queue.length) {
-                    pos = 0
-                    queue = shuffle(photos)
-                  }
-                  var next = queue[pos]
-                  preload(next, function () {
-                    setBackground(inactive, next)
-                    inactive.classList.add('is-active')
-                    active.classList.remove('is-active')
-                    var swap = active
-                    active = inactive
-                    inactive = swap
-                    setTimeout(advance, HOLD_MS)
-                  })
-                }
-
-                setTimeout(advance, HOLD_MS)
-              })()
-            </script>
-            <noscript>
-              <img class="hero-media" src={HOUSE_HEROES[0].src} alt="" />
-            </noscript>
-          </>
+          <PhotoMontage photos={HOUSE_HEROES} />
         )
       }
       <div class="hero-scrim" aria-hidden="true"></div>
     </div>
 
     <div class="hero-content">
+      {heroTagline && <p class="hero-tagline">{heroTagline}</p>}
       {
-        siteSettings?.missionStatement && (
-          <p class="hero-mission">{siteSettings.missionStatement}</p>
+        heroMission.length > 0 && (
+          <div class="hero-mission">
+            {heroMission.map((line) => (
+              <p>{line}</p>
+            ))}
+          </div>
         )
       }
     </div>
@@ -200,6 +153,19 @@ const HOUSE_HEROES = [
     in front of another rather than as a rendering bug.
   */}
   <div class="scroller">
+    {
+      homeIntro.length > 0 && (
+        <section class="intro">
+          <Topography tone="blue" />
+          <div class="intro-inner">
+            {homeIntro.map((paragraph) => (
+              <p>{paragraph}</p>
+            ))}
+          </div>
+        </section>
+      )
+    }
+
     {
       lead && (
         <section class="front-section">
@@ -294,10 +260,10 @@ const HOUSE_HEROES = [
   }
 
   /*
-    The drift lives here rather than on the photo layers themselves — with
-    two crossfading layers instead of one <img>, one shared animation on
-    their parent is simpler than duplicating it per layer, and it applies
-    equally to the single-image Sanity-override case below.
+    The drift lives here rather than on the photo itself — PhotoMontage renders
+    two crossfading layers, so one shared animation on their parent is simpler
+    than duplicating it per layer, and it applies equally to the single-image
+    Sanity-override case below.
   */
   .hero-frame {
     position: absolute;
@@ -312,25 +278,6 @@ const HOUSE_HEROES = [
     width: 100%;
     height: 100%;
     object-fit: cover;
-  }
-
-  .hero-media-layer {
-    position: absolute;
-    inset: 0;
-    background-size: cover;
-    background-repeat: no-repeat;
-    opacity: 0;
-    transition: opacity 3000ms ease;
-  }
-
-  .hero-media-layer.is-active {
-    opacity: 1;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .hero-media-layer {
-      transition: none;
-    }
   }
 
   /*
@@ -407,8 +354,22 @@ const HOUSE_HEROES = [
   }
 
   /*
-    The mission statement sits in the lower third with a full --space-24
-    between it and the ticker, so the two never read as one crowded block.
+    The tagline reads as a definition, so it is set apart from the mission
+    under it: the utility face, small, and in the same near-white as
+    everything else over the photo. It is the one line on the hero that is
+    not a sentence, and it should not pretend to be one.
+  */
+  .hero-tagline {
+    margin: 0 0 var(--space-4);
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    letter-spacing: 0.04em;
+    color: var(--bg);
+  }
+
+  /*
+    The mission sits in the lower third with a full --space-24 between it and
+    the ticker, so the two never read as one crowded block.
   */
   .hero-mission {
     max-width: 52ch;
@@ -417,6 +378,14 @@ const HOUSE_HEROES = [
     font-size: var(--text-lg);
     line-height: 1.45;
     color: var(--bg);
+  }
+
+  .hero-mission :global(p) {
+    margin: 0;
+  }
+
+  .hero-mission :global(p + p) {
+    margin-top: var(--space-4);
   }
 
   .hero :global(.ticker) {
@@ -439,6 +408,69 @@ const HOUSE_HEROES = [
     max-width: 1400px;
     margin: 0 auto;
     padding: 0 var(--gutter);
+  }
+
+  /*
+    The band the reader meets first coming off the photo, and the one place on
+    the front page that genuinely breathes — via-design.md asks for the
+    section rhythm to alternate density, and everything below this is tight.
+
+    It is also the section the client marked for the topographic ground, so
+    the pattern's one appearance on the homepage is here rather than spread
+    across every plain surface.
+  */
+  .intro {
+    position: relative;
+    overflow: hidden;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: var(--space-32) 0;
+  }
+
+  .intro-inner {
+    position: relative;
+    z-index: 1;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 var(--gutter);
+  }
+
+  /*
+    Two columns, top-aligned. One column of this at the site's reading measure
+    left two thirds of the band empty, which read as an unfinished section
+    rather than as air. Side by side, the two paragraphs fill the width they
+    are given and the band still breathes vertically.
+
+    Each column keeps its own measure so neither runs past a comfortable line
+    length on a wide screen.
+  */
+  .intro-inner {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-16);
+    align-items: start;
+  }
+
+  .intro-inner :global(p) {
+    max-width: 52ch;
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: var(--text-lg);
+    line-height: 1.5;
+    color: var(--fg);
+  }
+
+  @media (max-width: 860px) {
+    .intro-inner {
+      grid-template-columns: 1fr;
+      gap: var(--space-8);
+    }
+  }
+
+  @media (max-width: 620px) {
+    .intro {
+      padding: var(--space-24) 0;
+    }
   }
 
   .front-section {

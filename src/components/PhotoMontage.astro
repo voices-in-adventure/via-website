@@ -1,0 +1,149 @@
+---
+/*
+  Two stacked layers that crossfade through a set of photos.
+
+  This is the homepage hero's ambient backdrop, lifted out so the About page
+  montage can use the same mechanism rather than a second implementation of it.
+  Both callers position and size it themselves; all this owns is the fade.
+
+  The layers are divs with a background-image set by the script, not <img>
+  tags, so nothing loads until the script decides it is needed — fetching a
+  whole photo set eagerly on every visit would be wasteful for a backdrop.
+  A <noscript> still photo covers the case where the script never runs.
+*/
+export interface MontagePhoto {
+  src: string
+  /** CSS background-position. Every photo needs its own — centring by default cuts the subject. */
+  position: string
+}
+
+interface Props {
+  photos: MontagePhoto[]
+  /** How long each photo holds before the next one starts fading in. */
+  holdMs?: number
+  /** How long the crossfade itself takes. */
+  fadeMs?: number
+  /** Alt text for the no-script fallback. Empty when the photos are decorative. */
+  alt?: string
+}
+
+const {photos, holdMs = 9000, fadeMs = 3000, alt = ''} = Astro.props
+
+// Ids rather than classes, so two montages on one page cannot drive each
+// other's layers. Astro's style scoping does not extend to querySelector.
+const id = `montage-${Math.random().toString(36).slice(2, 10)}`
+---
+
+<div class="montage" id={id} style={`--montage-fade: ${fadeMs}ms`}>
+  <div class="montage-layer" data-layer="a"></div>
+  <div class="montage-layer" data-layer="b"></div>
+  <noscript>
+    <img class="montage-still" src={photos[0]?.src} alt={alt} style={`object-position: ${photos[0]?.position}`} />
+  </noscript>
+</div>
+
+<script is:inline define:vars={{photos, holdMs, id}}>
+  ;(function () {
+    var root = document.getElementById(id)
+    if (!root || !photos || photos.length === 0) return
+
+    var layerA = root.querySelector('[data-layer="a"]')
+    var layerB = root.querySelector('[data-layer="b"]')
+    if (!layerA || !layerB) return
+
+    function shuffle(list) {
+      var copy = list.slice()
+      for (var i = copy.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1))
+        var tmp = copy[i]
+        copy[i] = copy[j]
+        copy[j] = tmp
+      }
+      return copy
+    }
+
+    function setBackground(layer, photo) {
+      layer.style.backgroundImage = 'url(' + photo.src + ')'
+      layer.style.backgroundPosition = photo.position
+    }
+
+    var queue = shuffle(photos)
+    var pos = 0
+    var active = layerA
+    var inactive = layerB
+
+    // First paint shows immediately — no fade-in from blank.
+    active.style.transition = 'none'
+    setBackground(active, queue[pos])
+    active.classList.add('is-active')
+    void active.offsetHeight
+    active.style.transition = ''
+
+    var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (reduceMotion || photos.length < 2) return
+
+    function preload(photo, onDone) {
+      var img = new Image()
+      img.onload = onDone
+      img.onerror = onDone
+      img.src = photo.src
+    }
+
+    function advance() {
+      pos = pos + 1
+      if (pos >= queue.length) {
+        pos = 0
+        queue = shuffle(photos)
+      }
+      var next = queue[pos]
+      preload(next, function () {
+        setBackground(inactive, next)
+        inactive.classList.add('is-active')
+        active.classList.remove('is-active')
+        var swap = active
+        active = inactive
+        inactive = swap
+        setTimeout(advance, holdMs)
+      })
+    }
+
+    setTimeout(advance, holdMs)
+  })()
+</script>
+
+<style>
+  .montage {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  }
+
+  .montage-layer {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-repeat: no-repeat;
+    opacity: 0;
+    transition: opacity var(--montage-fade) ease;
+  }
+
+  .montage-layer.is-active {
+    opacity: 1;
+  }
+
+  .montage-still {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /*
+    The first photo still paints; it just never advances. Nothing the reader
+    needs is behind the fade, so there is nothing to restore here.
+  */
+  @media (prefers-reduced-motion: reduce) {
+    .montage-layer {
+      transition: none;
+    }
+  }
+</style>

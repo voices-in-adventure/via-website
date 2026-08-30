@@ -1,12 +1,18 @@
 ---
-// Stories: the two streams side by side, each with its highlights on top and
-// its full archive below. via-design.md is specific that Dispatches and
-// Signals stay separate here — they are different reads, and merging them
-// into one date-sorted river would hide that.
+// Stories: the two streams as two columns running the full depth of the page,
+// each with its highlights on top and its archive below. via-design.md is
+// specific that Dispatches and Signals stay separate here — they are
+// different reads, and merging them into one date-sorted river would hide
+// that. The client asked for them side by side rather than stacked, which
+// makes the separation the page's actual structure instead of a heading.
 //
-// The two sections are deliberately unequal. Dispatches run 1,000–1,500 words
-// and get the room; Signals run 150–500 and are packed tighter. via-design.md:
-// "a page of evenly-spaced equal-weight sections reads as a template."
+// The two columns are deliberately unequal, in three ways at once: Dispatches
+// take more width, their cards carry photography and deks, and they sit on
+// the page's own ground. Signals are narrower, run as ruled headlines below
+// their lead, and sit on the tinted band. Dispatches run 1,000–1,500 words and
+// get the room; Signals run 150–500 and are packed tighter. via-design.md: "a
+// page of evenly-spaced equal-weight sections reads as a template" — two
+// equal columns would be exactly that.
 import PageLayout from '../layouts/PageLayout.astro'
 import SectionHead from '../components/SectionHead.astro'
 import ArticleCard from '../components/ArticleCard.astro'
@@ -27,8 +33,12 @@ const settings = await sanityClient.fetch<SubscribeSettings | null>(
 // One query per stream, newest first. Featured and archive are split in JS
 // rather than run as four queries — the same rows answer both questions.
 const [dispatches, signals] = await Promise.all([
+  // Destination Guides are excluded here on purpose: the client's edit round
+  // made them their own category, and their home is Journeys. One field
+  // decides — see articleHref() and docs/content-model.md.
   sanityClient.fetch<ArticleCardType[]>(
-    `*[_type == "dispatch" && publishedAt <= now()] | order(publishedAt desc){${CARD_PROJECTION}}`,
+    `*[_type == "dispatch" && format != "guide" && publishedAt <= now()]
+      | order(publishedAt desc){${CARD_PROJECTION}}`,
   ),
   sanityClient.fetch<ArticleCardType[]>(
     `*[_type == "signal" && publishedAt <= now()] | order(publishedAt desc){${CARD_PROJECTION}}`,
@@ -45,23 +55,22 @@ const archiveSignals = signals.filter((a) => !a.featured)
 
 <PageLayout
   title="Stories"
-  standfirst="Two streams. Dispatches are the long reads — a place, reported at length by someone who went. Signals are short and dated: what changed this week, and when we checked."
+  standfirst="Our flagship travel writing is made by young people, for young people, driven by a commitment to real experiences and a curiosity to look beyond the obvious. Through our content, we aim to make travel feel more meaningful and accessible to a broad range of backgrounds, budgets, and levels of expertise."
 >
-  <section class="stream stream--dispatches">
-    <div class="stream-inner">
+  <div class="streams">
+    <section class="stream stream--dispatches">
       <SectionHead
         title="Dispatches"
-        note="Features, essays, and destination guides. One place, at length."
-        actionLabel="Subscribe to Dispatches"
+        note="Reporting from the ground, our writers share their unique experiences, encounters, and lessons learned in faraway places. From eye-opening cultural reflections to the thrill of stumbling upon a hidden gem, our Dispatches bring you closer to the places we visit and make the world feel just a little more magical."
         actionHref={settings?.dispatchSubscribeUrl}
         actionExternal
       />
 
       {
         featuredDispatches.length > 0 && (
-          <div class="grid grid--2">
+          <div class="grid grid--dispatch-featured">
             {featuredDispatches.map((article) => (
-              <ArticleCard article={article} />
+              <ArticleCard article={article} kickerAccent={false} />
             ))}
           </div>
         )
@@ -71,9 +80,9 @@ const archiveSignals = signals.filter((a) => !a.featured)
         archiveDispatches.length > 0 && (
           <>
             <p class="archive-label">Archive</p>
-            <div class="grid grid--3">
+            <div class="grid grid--dispatch-archive">
               {archiveDispatches.map((article) => (
-                <ArticleCard article={article} />
+                <ArticleCard article={article} kickerAccent={false} />
               ))}
             </div>
           </>
@@ -90,94 +99,146 @@ const archiveSignals = signals.filter((a) => !a.featured)
           />
         )
       }
-    </div>
-  </section>
+    </section>
 
-  <section class="stream stream--signals">
-    <div class="stream-inner">
-      <SectionHead
-        title="Signals"
-        note="Short, dated, and reported. Visa rules, strikes, closures, prices — with the day we checked."
-        actionLabel="Subscribe to Signals"
-        actionHref={settings?.signalsSubscribeUrl}
-        actionExternal
-      />
+    <section class="stream stream--signals">
+      <div class="stream-body">
+        <SectionHead
+          title="Signals"
+          note="What is changing in the world of travel, and what does it mean for you as a young traveler? Signals briefings cut through the noise to track the developments that could shape your next journey, from airline changes and visa policies to shifting prices and emerging trends across travel and hospitality."
+          actionLabel="Subscribe"
+          actionHref={settings?.signalsSubscribeUrl}
+          actionExternal
+        />
 
-      {
-        featuredSignals.length > 0 && (
-          <div class="grid grid--3">
-            {featuredSignals.map((article) => (
-              <ArticleCard article={article} />
-            ))}
-          </div>
-        )
-      }
-
-      {
-        archiveSignals.length > 0 && (
-          <>
-            <p class="archive-label">Archive</p>
-            <div class="grid grid--4">
-              {archiveSignals.map((article) => (
-                <ArticleCard article={article} />
+        {
+          featuredSignals.length > 0 && (
+            <div class="grid grid--signal-featured">
+              {featuredSignals.map((article) => (
+                <ArticleCard article={article} kickerAccent={false} />
               ))}
             </div>
-          </>
-        )
-      }
+          )
+        }
 
-      {
-        signals.length === 0 && (
-          <EmptyState
-            title="No Signals yet"
-            body="Signals go up as things change on the ground. Nothing has been filed yet — if you are somewhere and something moved, tell us."
-            actionLabel="Send us a Signal"
-            actionHref={settings?.pitchUsUrl}
-          />
-        )
-      }
-    </div>
-  </section>
+        {
+          archiveSignals.length > 0 && (
+            <>
+              <p class="archive-label">Archive</p>
+              <div class="grid grid--signal-archive">
+                {archiveSignals.map((article) => (
+                  <ArticleCard article={article} variant="compact" kickerAccent={false} />
+                ))}
+              </div>
+            </>
+          )
+        }
+
+        {
+          signals.length === 0 && (
+            <EmptyState
+              title="No Signals yet"
+              body="Signals go up as things change on the ground. Nothing has been filed yet — if you are somewhere and something moved, tell us."
+              actionLabel="Send us a Signal"
+              actionHref={settings?.pitchUsUrl}
+            />
+          )
+        }
+      </div>
+    </section>
+  </div>
 </PageLayout>
 
 <style>
-  .stream-inner {
+  /*
+    The two streams, side by side for the whole scroll, in equal columns.
+
+    The client's edit asks only for side by side; equal widths are the plain
+    reading of that, and they let the two streams present as genuine equals.
+    The difference between them is carried by the cards instead — Dispatches
+    keep photography and deks, Signals run as ruled headlines under one lead —
+    which is enough to keep the page from reading as one list broken in half.
+
+    align-items: start so each column ends where its content ends. Stretching
+    the tinted panel to match the Dispatch column leaves a tall band of empty
+    tint whenever the two streams are publishing at different rates, which
+    reads as a section that failed to load rather than as a designed panel.
+  */
+  .streams {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-16);
+    align-items: start;
     max-width: 1400px;
     margin: 0 auto;
     padding: 0 var(--gutter);
   }
 
-  /* The long-form stream breathes. */
   .stream--dispatches {
     padding-bottom: var(--space-24);
   }
 
   /*
-    The short stream is set on the tinted surface and packed tighter, so the
-    two halves of the page read as two different kinds of reading rather than
-    one list broken in half.
+    The tinted column. Its own padding rather than the page's, so the tint
+    reads as a panel the Signals live in instead of a stripe that happens to
+    sit under them.
+
+    No contour pattern here. It went behind this column briefly and made the
+    headlines measurably harder to read — the pattern belongs on surfaces
+    carrying little or no body copy, which is the homepage band and the
+    footer.
+  */
+  /*
+    The panel is pulled up by exactly its own top padding, so the drawn rule
+    inside it starts on the same line as the rule in the column beside it.
+
+    Without this the two rules sit --space-8 apart: the grid aligns the tops
+    of the two columns, and the left column's rule is its first pixel while
+    this one's is inset by the panel's padding. Lifting the box rather than
+    dropping the padding keeps the tint from crowding the rule.
   */
   .stream--signals {
-    padding: var(--space-16) 0 var(--space-24);
     background: var(--surface);
+    padding: var(--space-8) var(--space-8) var(--space-24);
+    margin-top: calc(-1 * var(--space-8));
+  }
+
+  .stream-body {
+    position: relative;
+    z-index: 1;
   }
 
   .grid {
     display: grid;
-    gap: var(--space-8) var(--space-6);
-  }
-
-  .grid--2 {
-    grid-template-columns: repeat(2, 1fr);
     gap: var(--space-12) var(--space-8);
   }
 
-  .grid--3 {
-    grid-template-columns: repeat(3, 1fr);
+  /* The long reads, one to a row — the only cards on the page that get to be
+     this size. */
+  .grid--dispatch-featured {
+    grid-template-columns: 1fr;
   }
 
-  .grid--4 {
-    grid-template-columns: repeat(4, 1fr);
+  .grid--dispatch-archive {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* One Signal leads with a photo; the rest are headlines. */
+  .grid--signal-featured {
+    grid-template-columns: 1fr;
+  }
+
+  .grid--signal-archive {
+    grid-template-columns: 1fr;
+    gap: var(--space-6);
+  }
+
+  /* A rule between headlines, never above the first — the archive label is
+     already drawing one a few pixels higher. Same treatment as the homepage
+     rail. */
+  .grid--signal-archive :global(.card + .card) {
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--border);
   }
 
   .archive-label {
@@ -191,28 +252,44 @@ const archiveSignals = signals.filter((a) => !a.featured)
   }
 
   /*
-    Desktop first: the grids collapse rather than being rebuilt. Below 900px
-    the four-up Signals archive is unreadable at card width, so both archive
-    densities become two-up and the featured rows go single-column.
+    Below this the Dispatch archive's two-up grid is too narrow to hold a card
+    with a photo and a dek, so it drops to one.
   */
-  @media (max-width: 1100px) {
-    .grid--4 {
-      grid-template-columns: repeat(3, 1fr);
+  @media (max-width: 1150px) {
+    .grid--dispatch-archive {
+      grid-template-columns: 1fr;
     }
   }
 
+  /*
+    And below this there is no room for two columns of type at all. The
+    streams stack, Dispatches first, and the tinted panel goes full width —
+    which is roughly where the page started before the columns.
+  */
   @media (max-width: 900px) {
-    .grid--3,
-    .grid--4 {
-      grid-template-columns: repeat(2, 1fr);
+    .streams {
+      grid-template-columns: 1fr;
+      gap: var(--space-16);
+    }
+
+    .grid--dispatch-archive {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .grid--signal-featured {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
 
   @media (max-width: 620px) {
-    .grid--2,
-    .grid--3,
-    .grid--4 {
+    .grid--dispatch-archive,
+    .grid--signal-featured {
       grid-template-columns: 1fr;
+    }
+
+    .stream--signals {
+      padding: var(--space-6) var(--space-6) var(--space-16);
+      margin-top: calc(-1 * var(--space-6));
     }
   }
 </style>
