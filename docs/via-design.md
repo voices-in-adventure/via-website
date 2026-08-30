@@ -174,6 +174,26 @@ Africa, Oceania, Middle East) and *Reasons to go* (thematic: "for the plot,"
 "stipend just dropped," "bored for the weekend," "table for one"). Both are
 tag-driven aggregate views. They auto-populate. Nothing here is hand-curated.
 
+Each axis has a picker at the top of its column, at the client's request: an
+interactive globe for regions, a set of notebook index dividers for reasons.
+Both rules below are load-bearing.
+
+*The globe never carries information on its own.* The six region cards render
+underneath it, server-side, in every browser. The globe is `aria-hidden`,
+mounts only above 1000px with WebGL and without `prefers-reduced-motion`. It
+drifts slowly on its own and stops under the pointer, so a region is never a
+moving target. Its 500 KB of JavaScript loads from a separate file, only once
+the section is nearly on screen, and on no other page. If any of that fails,
+the page is unchanged.
+
+*The notebook is not a layer over the reasons.* Its four dividers **are** the
+reason links. There is no tab state to discover and nothing hidden behind one.
+
+Land shapes come from `public/regions.geo.json`, rebuilt by
+`scripts/build-regions.mjs` from Natural Earth's public-domain 1:110m
+countries file. Region membership is a judgement call and lives in two lists
+at the top of that script.
+
 **Resources** — Collates entities mentioned *inside* articles: products, maps,
 emergency info, checklists. Products are their own records that articles link
 to, which is what lets this page assemble itself.

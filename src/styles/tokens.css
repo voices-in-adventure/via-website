@@ -28,6 +28,14 @@
   --tag-oceania: #c9a227;
   --tag-mideast: #4a7c59;
 
+  /* ---- Color: the Journeys globe ----
+     Two surfaces the rest of the site has no use for. The sphere is paper,
+     not ocean blue — a photographic globe would be the only photographic
+     illustration on the site. Land with no VIA region is the color of a tag
+     with nothing filed under it. */
+  --globe-ocean: #ecebe6;
+  --globe-land: #dbd8d0;
+
   /* ---- Type: faces ----
      Newsreader carries both display and body copy — one family across
      both roles, on purpose. Poppins is utility only (nav, metadata,
@@ -69,7 +77,20 @@
      scroll. Declared here rather than in Nav.astro because the homepage hero
      also needs the tall one — it reserves that much clearance so nothing can
      ever sit under an expanded masthead. Changing the masthead's size stays
-     a one-file edit. */
+     a one-file edit.
+
+     On narrow screens the links stack under the wordmark and the tall value
+     has to carry both, which is why the media query below raises it. */
   --masthead-tall: 120px;
   --masthead-short: 76px;
+}
+
+/* Narrow screens stack the masthead in both states — see the mobile block in
+   Nav.astro. Both heights are overridden here rather than there so the
+   homepage hero's clearance keeps agreeing with the masthead's real height. */
+@media (max-width: 760px) {
+  :root {
+    --masthead-tall: 128px;
+    --masthead-short: 116px;
+  }
 }

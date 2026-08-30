@@ -102,7 +102,12 @@ import {SCRIBBLE_PATHS, SCRIBBLE_VIEWBOX} from '../lib/scribbles'
   let next = Math.floor(Math.random() * SCRIBBLE_PATHS.length)
 
   for (const host of document.querySelectorAll<HTMLElement>('[data-scribble]')) {
-    const path = host.querySelector('path')
+    // Specifically the scribble's own path. `querySelector('path')` would take
+    // the first path anywhere inside the link, which on a card whose markup
+    // contains another drawing — the Reasons notebook tab, say — is the wrong
+    // one, and swapping a scribble variant into it replaces that drawing with
+    // a squiggle.
+    const path = host.querySelector('svg.scribble path')
     if (!path) continue
 
     const advance = () => {

@@ -11,6 +11,7 @@ import PageLayout from './PageLayout.astro'
 import ArticleCard from '../components/ArticleCard.astro'
 import EmptyState from '../components/EmptyState.astro'
 import TagLink from '../components/TagLink.astro'
+import HandRule from '../components/HandRule.astro'
 import type {ArticleCard as ArticleCardType} from '../lib/articles'
 
 export interface SiblingTag {
@@ -45,6 +46,7 @@ const countLabel =
 
 <PageLayout title={title} eyebrow={eyebrow} standfirst={description}>
   <div class="archive">
+    <HandRule />
     <p class="archive-count">{countLabel}</p>
 
     {
@@ -101,7 +103,6 @@ const countLabel =
   .archive-count {
     margin: 0 0 var(--space-8);
     padding-top: var(--space-3);
-    border-top: 1px solid var(--fg);
     font-family: var(--font-sans);
     font-size: var(--text-xs);
     letter-spacing: 0.04em;

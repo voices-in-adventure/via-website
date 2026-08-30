@@ -11,6 +11,7 @@
 // The hover is the house scribble, same as ArticleCard, so the two kinds of
 // card on the site behave identically under the cursor.
 import Scribble from './Scribble.astro'
+import {storyCountLabel} from '../lib/articles'
 
 interface Props {
   href: string
@@ -23,7 +24,7 @@ interface Props {
 
 const {href, title, description, count, color} = Astro.props
 
-const countLabel = count === 0 ? 'No stories yet' : count === 1 ? '1 story' : `${count} stories`
+const countLabel = storyCountLabel(count)
 ---
 
 <article class="tag-card" data-color={color ?? undefined}>
@@ -68,7 +69,7 @@ const countLabel = count === 0 ? 'No stories yet' : count === 1 ? '1 story' : `$
     position: relative;
     display: inline-block;
     --scribble-height: 0.7em;
-    --scribble-drop: -0.28em;
+    --scribble-drop: -0.16em;
   }
 
   .tag-card-description {

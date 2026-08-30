@@ -7,7 +7,10 @@ import {ARTICLE_PROJECTION, type Article} from '../../lib/articles'
 
 export async function getStaticPaths() {
   const dispatches = await sanityClient.fetch<Article[]>(
-    `*[_type == "dispatch" && defined(slug.current) && publishedAt <= now()]{${ARTICLE_PROJECTION}}`,
+    // Destination Guides are excluded: they have their own route and template
+    // under /journeys/guides/. Without this they would build at both
+    // addresses, which is two URLs for one piece.
+    `*[_type == "dispatch" && format != "guide" && defined(slug.current) && publishedAt <= now()]{${ARTICLE_PROJECTION}}`,
   )
 
   return dispatches.map((article) => ({

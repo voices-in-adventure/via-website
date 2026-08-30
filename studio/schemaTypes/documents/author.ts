@@ -32,10 +32,23 @@ export const author = defineType({
       description: 'How they’re credited, e.g. "Staff Writer" or "Managing Editor."',
     }),
     defineField({
+      name: 'hometown',
+      title: 'Hometown',
+      type: 'string',
+      description: 'Where they’re from. Shown on the About page, e.g. "Ho Chi Minh City."',
+    }),
+    defineField({
+      name: 'travelMustHave',
+      title: 'Travel must-have',
+      type: 'string',
+      description:
+        'The one thing they never travel without. Shown on the About page — keep it to a few words, e.g. "A fully charged power bank."',
+    }),
+    defineField({
       name: 'bio',
       title: 'Bio',
       type: 'text',
-      rows: 3,
+      rows: 5,
       description: 'A short bio for the About page team grid.',
     }),
     defineField({

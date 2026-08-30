@@ -10,6 +10,7 @@ import PageLayout from '../layouts/PageLayout.astro'
 import SectionHead from '../components/SectionHead.astro'
 import ProductCard from '../components/ProductCard.astro'
 import EmptyState from '../components/EmptyState.astro'
+import HandRule from '../components/HandRule.astro'
 import {sanityClient} from '../lib/sanity'
 import {byMentions, PRODUCTS_QUERY, type Product} from '../lib/products'
 
@@ -27,28 +28,29 @@ const preview = [...products].sort(byMentions).slice(0, 6)
 const strands = [
   {
     title: 'Maps',
-    body: 'Routes and regions drawn against the stories that cover them.',
+    body: 'Some of our detailed routes.',
   },
   {
-    title: 'Emergency information',
-    body: 'Embassies, insurance, and what to do when a trip goes wrong.',
+    title: 'Emergency Information',
+    body: 'What we’ve done when a trip went wrong.',
   },
   {
     title: 'Checklists',
-    body: 'What to sort before a visa run, a night bus, or a first solo trip.',
+    body:
+      'The unexpected things to sort out. For example, before getting your visa, or hopping on a night bus.',
   },
 ]
 ---
 
 <PageLayout
   title="Resources"
-  standfirst="Everything our writers actually used, lifted out of the stories that mention it. Nothing here is sponsored, and nothing is on the list because a brand asked."
+  standfirst="We’ve collated all the tools our writers have found helpful across their many travels, and we think you’ll be able to put them to good use too. You can click on a particular resource to see the pieces it’s been mentioned in, and get a better idea of how and where best to use it."
 >
   <section class="products">
     <div class="products-inner">
       <SectionHead
         title="Products"
-        note="Gear, apps, and services named in a Dispatch or a Signal — with the pieces that named them."
+        note="From the smallest lip balm to backpacks that double as cushions, every item here comes recommended by VIA’s own community of travelers. You’ll find that these are the things we’ve packed, carried, tested, and found practical in some unconventional ways."
         actionLabel="View all products"
         actionHref={products.length > 0 ? '/resources/products' : null}
       />
@@ -69,15 +71,19 @@ const strands = [
           />
         )
       }
+
+      <p class="independence">
+        No featured product is included by request of a brand, through sponsorship, or to earn
+        affiliate income.
+      </p>
     </div>
   </section>
 
   <section class="strands">
     <div class="strands-inner">
-      <h2 class="strands-heading">Also coming</h2>
-      <p class="strands-note">
-        Resources grows as the archive does. These are the next three, not yet built.
-      </p>
+      <HandRule />
+      <h2 class="strands-heading">Coming soon</h2>
+      <p class="strands-note">Keep an eye out!</p>
       <dl class="strands-list">
         {
           strands.map((strand) => (
@@ -104,6 +110,22 @@ const strands = [
     padding-bottom: var(--space-24);
   }
 
+  /*
+    The independence claim. Set quiet and small on purpose — it is a
+    disclosure, not a selling point, and a page that shouts about its own
+    integrity is doing the opposite of demonstrating it.
+  */
+  .independence {
+    max-width: var(--measure);
+    margin: var(--space-12) 0 0;
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--border);
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    line-height: 1.6;
+    color: var(--muted);
+  }
+
   .products-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -122,7 +144,6 @@ const strands = [
   .strands-heading {
     margin: 0;
     padding-top: var(--space-4);
-    border-top: 1px solid var(--fg);
     font-family: var(--font-serif);
     font-size: var(--text-xl);
     font-weight: 500;

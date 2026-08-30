@@ -27,6 +27,14 @@ export interface ArticleTag {
   color?: PlaceColor | null
 }
 
+/** One place a guide sends you, with the coordinates that pin it on the map. */
+export interface GuideStop {
+  title: string
+  note?: string | null
+  lat: number
+  lng: number
+}
+
 /** What a card needs. Deliberately smaller than the full article. */
 export interface ArticleCard {
   _type: 'dispatch' | 'signal'
@@ -39,6 +47,11 @@ export interface ArticleCard {
   author: ArticleAuthor | null
   /** The editors' toggle. Drives the homepage picks and the top of each Stories stream. */
   featured?: boolean | null
+  /**
+   * Dispatches only. `guide` is what moves a piece into Journeys and gives it
+   * the itinerary template — cards need it to build the right link.
+   */
+  format?: 'guide' | 'feature' | 'essay' | null
 }
 
 /** What the article page needs. */
@@ -53,6 +66,8 @@ export interface Article extends ArticleCard {
   newsPeg?: string | null
   /** Signals only. */
   informationAsOf?: string | null
+  /** Destination Guides only. The itinerary, in order. */
+  stops?: GuideStop[] | null
 }
 
 /** Fields every card on the site pulls. Kept in one place so cards stay consistent. */
@@ -65,6 +80,7 @@ export const CARD_PROJECTION = `
   publishedAt,
   city,
   featured,
+  format,
   author->{name, role}
 `
 
@@ -77,6 +93,7 @@ export const ARTICLE_PROJECTION = `
   duration,
   newsPeg,
   informationAsOf,
+  stops[]{title, note, lat, lng},
   places[]->{title, "slug": slug.current, color},
   reasons[]->{title, "slug": slug.current}
 `
@@ -103,6 +120,15 @@ export const LATEST_ARTICLES = `
 `
 
 /**
+ * Every published Destination Guide, newest first. Journeys runs this for its
+ * guides row, and the guide route builds a page from each.
+ */
+export const GUIDES = `
+  *[_type == "dispatch" && format == "guide" && publishedAt <= now()]
+    | order(publishedAt desc){${CARD_PROJECTION}}
+`
+
+/**
  * Every published article carrying a given tag, newest first. Both Journeys
  * archive types run this with $id bound to the place or reason document —
  * references() matches whichever array the tag sits in, so one query serves
@@ -123,12 +149,25 @@ export const TAG_COUNT = `
 `
 
 /**
- * Where an article lives. The two types get separate URL prefixes because
- * they are separate streams on the Stories page, and a reader should be able
- * to tell which they are looking at from the address bar.
+ * Where an article lives. The three kinds get separate URL prefixes because
+ * they are presented as separate things, and a reader should be able to tell
+ * which they are looking at from the address bar.
+ *
+ * A Dispatch whose format is `guide` is a Destination Guide, and those live
+ * under Journeys rather than Stories — the client's edit round asked for
+ * them to be their own category there. It is still one document type with
+ * one field deciding, per content-model.md; only the URL and the template
+ * change.
  */
-export function articleHref(article: {_type: string; slug: string}): string {
-  return article._type === 'signal' ? `/signals/${article.slug}` : `/dispatches/${article.slug}`
+export function articleHref(article: {_type: string; slug: string; format?: string | null}): string {
+  if (article._type === 'signal') return `/signals/${article.slug}`
+  if (article.format === 'guide') return `/journeys/guides/${article.slug}`
+  return `/dispatches/${article.slug}`
+}
+
+/** True for the Dispatches that are really Destination Guides. */
+export function isGuide(article: {_type: string; format?: string | null}): boolean {
+  return article._type === 'dispatch' && article.format === 'guide'
 }
 
 /**
@@ -144,24 +183,48 @@ export function reasonHref(slug: string): string {
   return `/journeys/reasons/${slug}`
 }
 
-/** "Dispatch — Berlin" / "Signal". The small line above a card or article title. */
-export function articleKicker(article: {_type: string; city?: string | null}): string {
-  const label = article._type === 'signal' ? 'Signal' : 'Dispatch'
-  return article.city ? `${label} — ${article.city}` : label
+/**
+ * How many stories are filed under a tag, in words.
+ *
+ * Zero is spelled out rather than shown as "0 stories", because a tag with
+ * nothing in it is a real state of this site and worth saying plainly. Three
+ * places print this — the tag card, the globe's caption, and the Reasons
+ * notebook — so it is written once.
+ */
+export function storyCountLabel(count: number): string {
+  if (count === 0) return 'No stories yet'
+  return count === 1 ? '1 story' : `${count} stories`
+}
+
+/** "Dispatch from Berlin" / "Signal". The small line above a card or article title. */
+export function articleKicker(article: {
+  _type: string
+  city?: string | null
+  format?: string | null
+}): string {
+  const label = article._type === 'signal' ? 'Signal' : isGuide(article) ? 'Guide' : 'Dispatch'
+  return article.city ? `${label} from ${article.city}` : label
 }
 
 /**
  * The same kicker, but split so the product name can be colored on its own.
- * Only "Dispatch"/"Signal" carries the accent — the city and the dash stay
+ * Only "Dispatch"/"Signal" carries the accent — the "from" and the city stay
  * muted, which keeps the accent on the one word that identifies what the
  * piece is. Templates that need the flat string still use articleKicker().
+ *
+ * The joining word is "from", not a dash: "Dispatch from Cape Town" reads as
+ * a sentence about where the piece was filed, which a dash never did.
  */
-export function articleKickerParts(article: {_type: string; city?: string | null}): {
+export function articleKickerParts(article: {
+  _type: string
+  city?: string | null
+  format?: string | null
+}): {
   label: string
   city: string | null
 } {
   return {
-    label: article._type === 'signal' ? 'Signal' : 'Dispatch',
+    label: article._type === 'signal' ? 'Signal' : isGuide(article) ? 'Guide' : 'Dispatch',
     city: article.city ?? null,
   }
 }

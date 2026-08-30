@@ -12,6 +12,12 @@ export interface ProductMention {
   title: string
   slug: string
   publishedAt: string
+  /**
+   * Needed by articleHref(): a Dispatch with format 'guide' is a Destination
+   * Guide and lives under /journeys/guides/, not /dispatches/. Leaving it out
+   * silently produced links to pages that no longer exist.
+   */
+  format?: 'guide' | 'feature' | 'essay' | null
 }
 
 export interface Product {
@@ -44,7 +50,7 @@ export const PRODUCTS_QUERY = `
     image,
     url,
     "articles": ${MENTIONS} | order(publishedAt desc){
-      _type, title, "slug": slug.current, publishedAt
+      _type, title, "slug": slug.current, publishedAt, format
     }
   }
 `

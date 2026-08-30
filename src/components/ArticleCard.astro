@@ -63,7 +63,7 @@ const mediaSrc = article.heroImage
 
     <div class="card-text">
       <p class:list={['card-kicker', !kickerAccent && 'card-kicker--quiet']}>
-        <span class="card-kicker-label">{kicker.label}</span>{kicker.city && ` — ${kicker.city}`}
+        <span class="card-kicker-label">{kicker.label}</span>{kicker.city && ` from ${kicker.city}`}
       </p>
       <h3 class="card-title">
         <span class="card-title-text">{article.title}<Scribble /></span>
@@ -95,10 +95,10 @@ const mediaSrc = article.heroImage
   }
 
   /*
-    Only the word that says what the piece is takes the accent. The city and
-    the dash stay muted — colouring the whole string turned the accent into a
-    label background rather than a signal. Signal and Dispatch labels are
-    always blue, regardless of kickerAccent.
+    Only the word that says what the piece is takes the accent. The "from"
+    and the city stay muted — colouring the whole string turned the accent
+    into a label background rather than a signal. Signal and Dispatch labels
+    are always blue, regardless of kickerAccent.
   */
   .card-kicker {
     margin: 0 0 var(--space-2);
@@ -134,7 +134,7 @@ const mediaSrc = article.heroImage
     position: relative;
     display: inline-block;
     --scribble-height: 0.7em;
-    --scribble-drop: -0.28em;
+    --scribble-drop: -0.16em;
   }
 
   .card-dek {
@@ -172,7 +172,7 @@ const mediaSrc = article.heroImage
      defaults land too heavy and too low. Tuned back by eye at this size. */
   .card--lead .card-title-text {
     --scribble-height: 0.5em;
-    --scribble-drop: -0.16em;
+    --scribble-drop: -0.04em;
   }
 
   .card--lead .card-dek {
@@ -243,7 +243,7 @@ const mediaSrc = article.heroImage
 
     .card--lead .card-title-text {
       --scribble-height: 0.6em;
-      --scribble-drop: -0.22em;
+      --scribble-drop: -0.1em;
     }
   }
 </style>
