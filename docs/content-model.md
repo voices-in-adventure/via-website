@@ -44,6 +44,7 @@ Long-form, 1,000–1,500 words.
 | `reasons` | array of references → `reason` | |
 | `products` | array of references → `product` | |
 | `body` | array (portable text) | required |
+| `stops` | array of objects | Only shown when `format === 'guide'`, and required for one. See below. |
 | `featured` | boolean | Surfaces on the homepage. |
 
 **Why `format` instead of a separate itinerary type.** A Destination Guide
@@ -51,6 +52,35 @@ already answers "if I have 24–72 hours here, what should I do" — that is an
 itinerary. Making it a separate document type would force editors to make a
 judgment call on every piece, and that ambiguity is where content models rot.
 Journeys treats `format === 'guide'` as its itineraries.
+
+### Destination Guides
+
+A guide is a Dispatch with `format: 'guide'`. That one field does three
+things, and nothing else has to be kept in sync:
+
+- it lives at `/journeys/guides/<slug>` instead of `/dispatches/<slug>`
+- it is left out of the Dispatches stream on Stories and appears on Journeys
+- it renders with the itinerary-and-map template rather than the article one
+
+Changing `format` in the Studio moves the piece completely. The routing lives
+in `articleHref()` in `src/lib/articles.ts`; any new place that links to an
+article must go through it rather than building a path by hand, and must
+project `format` in its query — a projection missing that field silently
+produces links to the old address.
+
+`stops` is the itinerary itself, in order:
+
+| Field | Type | Notes |
+|---|---|---|
+| `title` | string | required. The place's name. |
+| `note` | text | What to do there, in the guide's own voice. |
+| `lat` | number | required. Latitude, from Google Maps. |
+| `lng` | number | required. Longitude. |
+
+Each stop is a numbered pin on the map beside the guide, and the map follows
+the reader down the page. The itinerary is written to be complete on its own:
+the map is the same information drawn, so a guide still reads correctly with
+the map absent, on a narrow screen, or with JavaScript off.
 
 ## `signal`
 
@@ -110,6 +140,36 @@ Same shape as `place`, minus `color`.
 
 ---
 
+## `policy`
+
+One section of VIA's Standards and Ethics, published at `/standards/<slug>`.
+Six exist, transcribed from the client's Code of Ethics PDF.
+
+| Field | Why |
+|---|---|
+| `title` | The section name. Also the link text on About. |
+| `slug` | The URL under `/standards`. |
+| `order` | Position in the sequence, from 1. Drives the index order and the previous/next links. |
+| `summary` | One or two sentences, shown under the link on About and on the Standards index. |
+| `body` | `blockContent`, the same body type Dispatches and Signals use. |
+
+Not an article type: no author, no photography, no tags. These are a reference
+document read in order, which is why `order` exists and why the six sections
+carry previous/next rather than sitting in an archive. They sit with the
+supporting records in the desk, not beside Dispatches — editors publish
+against Dispatches daily and touch these once a year.
+
+The copy lives in `scripts/ethics-copy.mjs` and is written into Sanity by
+`scripts/seed-ethics.mjs`. That script creates missing sections and leaves
+existing ones alone, so a re-run never quietly discards an edit made in
+Studio; pass `--force` when the file has changed and should win.
+
+The one-paragraph intro that introduces the whole set is *not* in Sanity — it
+is static copy in `src/lib/standards.ts`, because it belongs to no section and
+appears in two places.
+
+---
+
 ## `siteSettings`
 
 A singleton. Homepage hero image or video, mission statement, social links,
@@ -118,6 +178,32 @@ subscribe URLs for Dispatch and Signals.
 Two mission fields, deliberately: `missionStatement` is the short line over
 the homepage photo, `aboutMission` is the longer portable-text version at the
 top of About. About falls back to the short one when the long one is empty.
+
+### The Engage group
+
+The Engage page has no server and no form service. Each of its three forms
+opens the reader's own email app with the fields already written into the
+message, so what the page needs from the CMS is where each one is addressed:
+
+| Field | Used by |
+|---|---|
+| `contributeEmail` | The "Write for VIA" submission form. |
+| `connectEmail` | The "Connect with VIA" form, including the 1–5 site rating. |
+| `joinEmail` | The join button, when no `applicationFormUrl` is set. |
+| `contributorPacketUrl` | The contributor packet button. Hidden while empty. |
+| `applicationFormUrl` | The application questionnaire. Falls back to `joinEmail`. |
+| `openRoles` | The open-role cards: `title` and `description` each. |
+
+Every one of these degrades to nothing rather than to a broken link: an empty
+`contributorPacketUrl` hides the button, an empty `openRoles` hides the cards,
+and an empty address hides that whole form. Seeded by
+`scripts/seed-engage.mjs`, which fills empty fields and leaves anything an
+editor has already set alone.
+
+Email cannot carry an attachment this way, which is why the submission form
+asks for the piece to be attached to the message that opens rather than
+offering a file input. Swapping in a real form service later is a change to
+where the form posts, not a rebuild of the page.
 
 ---
 
@@ -141,7 +227,8 @@ matters as much as the schema.
 - Journeys region page → dispatches and signals where `places` includes this
   place, sorted by date
 - Journeys reason page → same, filtered on `reasons`
-- Journeys itineraries → dispatches where `format == 'guide'`
+- Journeys → Destination Guides → dispatches where `format == 'guide'`
+- Stories → Dispatches → dispatches where `format != 'guide'`
 - Resources → products page → all products, with the articles referencing
   each one
 - Homepage ticker → distinct `city` values across published dispatches
