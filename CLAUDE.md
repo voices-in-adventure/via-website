@@ -23,6 +23,13 @@ dependency would need ongoing maintenance, don't add it.
 
 Editors publish through Sanity Studio and never touch this repo.
 
+**Publishing triggers a rebuild.** The site is static: pages are built from
+Sanity once, at deploy time. A Sanity webhook ("Rebuild site on Vercel")
+calls a Vercel deploy hook whenever a published document is created, updated
+or deleted, so new content goes live about a minute after Publish. If
+published content isn't appearing, that webhook is the first thing to check.
+See `docs/publishing-rebuild.md`.
+
 ## Stack constraints
 
 - **Astro**, not Next or React-first. Astro components with scoped styles are
