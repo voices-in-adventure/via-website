@@ -16,8 +16,11 @@ const {cities} = Astro.props
 
 // Ordered west to east, like a wall of office clocks. Publication order would
 // be arbitrary here; longitude is the thing a reader can actually follow.
+// A city missing from src/lib/cityTimezones.ts is skipped entirely — a clock
+// with no time reads as broken.
 const items = cities
   .map((city) => ({city, timezone: getTimezoneForCity(city)}))
+  .filter((item): item is {city: string; timezone: string} => item.timezone !== null)
   .sort((a, b) => getUtcOffsetMinutes(a.timezone) - getUtcOffsetMinutes(b.timezone))
 ---
 
@@ -26,11 +29,9 @@ const items = cities
     items.map(({city, timezone}) => (
       <div class="ticker-item" data-city={city}>
         <span class="ticker-city">{city}</span>
-        {timezone ? (
-          <time class="ticker-time" data-tz={timezone}>
-            --:--:--
-          </time>
-        ) : null}
+        <time class="ticker-time" data-tz={timezone}>
+          --:--:--
+        </time>
       </div>
     ))
   }

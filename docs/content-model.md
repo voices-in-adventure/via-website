@@ -231,7 +231,10 @@ matters as much as the schema.
 - Stories → Dispatches → dispatches where `format != 'guide'`
 - Resources → products page → all products, with the articles referencing
   each one
-- Homepage ticker → distinct `city` values across published dispatches
+- Homepage ticker → distinct `city` values across published dispatches, most
+  recent first. Only cities listed in `src/lib/cityTimezones.ts` appear;
+  any other city is skipped (no blank clock). Matching ignores case, accents
+  and anything after a comma, so "São Paulo, Brazil" matches `sao paulo`.
 - Homepage featured → `featured == true`, across both types, most recent first
 
 None of these pages are hand-curated. They are queries.

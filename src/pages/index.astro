@@ -6,6 +6,7 @@ import SectionHead from '../components/SectionHead.astro'
 import Topography from '../components/Topography.astro'
 import PhotoMontage from '../components/PhotoMontage.astro'
 import {sanityClient, urlFor} from '../lib/sanity'
+import {getTimezoneForCity} from '../lib/cityTimezones'
 import {
   FEATURED_ARTICLES,
   LATEST_ARTICLES,
@@ -86,7 +87,19 @@ const dispatchCities = await sanityClient.fetch<string[]>(
   `*[_type == "dispatch" && publishedAt <= now() && defined(city) && city != ""]
     | order(publishedAt desc)[0...24].city`,
 )
-const tickerCities = [...new Set(dispatchCities)].slice(0, TICKER_CITY_COUNT)
+// Cities without a known timezone are dropped *before* counting, so an
+// unrecognised city never takes a slot or shows up without a clock. Repeats
+// are collapsed ignoring case/spacing, so "Paris" and "paris " count once.
+const seenTimezoneKeys = new Set<string>()
+const tickerCities = dispatchCities
+  .filter((city) => {
+    if (!getTimezoneForCity(city)) return false
+    const key = city.trim().toLowerCase()
+    if (seenTimezoneKeys.has(key)) return false
+    seenTimezoneKeys.add(key)
+    return true
+  })
+  .slice(0, TICKER_CITY_COUNT)
 
 /*
   The hero photo, in order of preference:
